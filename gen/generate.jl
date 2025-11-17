@@ -7,12 +7,15 @@ include_dirs = [
     joinpath(CUDA_SDK_jll.artifact_dir, "include"),
 ]
 
-header = joinpath(include_dirs[1], "cupdlpx.h")
+headers = [
+    joinpath(include_dirs[1], "cupdlpx.h"),
+    joinpath(include_dirs[1], "mps_parser.h"),
+]
 
 args = vcat(get_default_args(), ["-I$(d)" for d in include_dirs]...)
 
 options = load_options(joinpath(@__DIR__, "generate.toml"))
-ctx = create_context([header], args, options)
+ctx = create_context(headers, args, options)
 
 ctx.options["is_function_allowed"] = (cursor, spelling) -> startswith(spelling, "cupdlpx_")
 

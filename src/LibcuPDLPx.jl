@@ -89,30 +89,30 @@ end
     matrix_coo = 3
 end
 
-struct var"##Ctag#230"
+struct var"##Ctag#270"
     data::NTuple{32, UInt8}
 end
 
-function Base.getproperty(x::Ptr{var"##Ctag#230"}, f::Symbol)
-    f === :dense && return Ptr{var"##Ctag#231"}(x + 0)
-    f === :csr && return Ptr{var"##Ctag#232"}(x + 0)
-    f === :csc && return Ptr{var"##Ctag#233"}(x + 0)
-    f === :coo && return Ptr{var"##Ctag#234"}(x + 0)
+function Base.getproperty(x::Ptr{var"##Ctag#270"}, f::Symbol)
+    f === :dense && return Ptr{var"##Ctag#271"}(x + 0)
+    f === :csr && return Ptr{var"##Ctag#272"}(x + 0)
+    f === :csc && return Ptr{var"##Ctag#273"}(x + 0)
+    f === :coo && return Ptr{var"##Ctag#274"}(x + 0)
     return getfield(x, f)
 end
 
-function Base.getproperty(x::var"##Ctag#230", f::Symbol)
-    r = Ref{var"##Ctag#230"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#230"}, r)
+function Base.getproperty(x::var"##Ctag#270", f::Symbol)
+    r = Ref{var"##Ctag#270"}(x)
+    ptr = Base.unsafe_convert(Ptr{var"##Ctag#270"}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
-function Base.setproperty!(x::Ptr{var"##Ctag#230"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{var"##Ctag#270"}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
-function Base.propertynames(x::var"##Ctag#230", private::Bool = false)
+function Base.propertynames(x::var"##Ctag#270", private::Bool = false)
     (:dense, :csr, :csc, :coo, if private
             fieldnames(typeof(x))
         else
@@ -129,7 +129,7 @@ function Base.getproperty(x::Ptr{matrix_desc_t}, f::Symbol)
     f === :n && return Ptr{Cint}(x + 4)
     f === :fmt && return Ptr{matrix_format_t}(x + 8)
     f === :zero_tolerance && return Ptr{Cdouble}(x + 16)
-    f === :data && return Ptr{var"##Ctag#230"}(x + 24)
+    f === :data && return Ptr{var"##Ctag#270"}(x + 24)
     return getfield(x, f)
 end
 
@@ -176,33 +176,37 @@ function lp_problem_free(prob)
     ccall((:lp_problem_free, libcupdlpx), Cvoid, (Ptr{lp_problem_t},), prob)
 end
 
-struct var"##Ctag#231"
+function read_mps_file(filename)
+    ccall((:read_mps_file, libcupdlpx), Ptr{lp_problem_t}, (Ptr{Cchar},), filename)
+end
+
+struct var"##Ctag#271"
     A::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#231"}, f::Symbol)
+function Base.getproperty(x::Ptr{var"##Ctag#271"}, f::Symbol)
     f === :A && return Ptr{Ptr{Cdouble}}(x + 0)
     return getfield(x, f)
 end
 
-function Base.getproperty(x::var"##Ctag#231", f::Symbol)
-    r = Ref{var"##Ctag#231"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#231"}, r)
+function Base.getproperty(x::var"##Ctag#271", f::Symbol)
+    r = Ref{var"##Ctag#271"}(x)
+    ptr = Base.unsafe_convert(Ptr{var"##Ctag#271"}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
-function Base.setproperty!(x::Ptr{var"##Ctag#231"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{var"##Ctag#271"}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
 
-struct var"##Ctag#232"
+struct var"##Ctag#272"
     nnz::Cint
     row_ptr::Ptr{Cint}
     col_ind::Ptr{Cint}
     vals::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#232"}, f::Symbol)
+function Base.getproperty(x::Ptr{var"##Ctag#272"}, f::Symbol)
     f === :nnz && return Ptr{Cint}(x + 0)
     f === :row_ptr && return Ptr{Ptr{Cint}}(x + 8)
     f === :col_ind && return Ptr{Ptr{Cint}}(x + 16)
@@ -210,25 +214,25 @@ function Base.getproperty(x::Ptr{var"##Ctag#232"}, f::Symbol)
     return getfield(x, f)
 end
 
-function Base.getproperty(x::var"##Ctag#232", f::Symbol)
-    r = Ref{var"##Ctag#232"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#232"}, r)
+function Base.getproperty(x::var"##Ctag#272", f::Symbol)
+    r = Ref{var"##Ctag#272"}(x)
+    ptr = Base.unsafe_convert(Ptr{var"##Ctag#272"}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
-function Base.setproperty!(x::Ptr{var"##Ctag#232"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{var"##Ctag#272"}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
 
-struct var"##Ctag#233"
+struct var"##Ctag#273"
     nnz::Cint
     col_ptr::Ptr{Cint}
     row_ind::Ptr{Cint}
     vals::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#233"}, f::Symbol)
+function Base.getproperty(x::Ptr{var"##Ctag#273"}, f::Symbol)
     f === :nnz && return Ptr{Cint}(x + 0)
     f === :col_ptr && return Ptr{Ptr{Cint}}(x + 8)
     f === :row_ind && return Ptr{Ptr{Cint}}(x + 16)
@@ -236,25 +240,25 @@ function Base.getproperty(x::Ptr{var"##Ctag#233"}, f::Symbol)
     return getfield(x, f)
 end
 
-function Base.getproperty(x::var"##Ctag#233", f::Symbol)
-    r = Ref{var"##Ctag#233"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#233"}, r)
+function Base.getproperty(x::var"##Ctag#273", f::Symbol)
+    r = Ref{var"##Ctag#273"}(x)
+    ptr = Base.unsafe_convert(Ptr{var"##Ctag#273"}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
-function Base.setproperty!(x::Ptr{var"##Ctag#233"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{var"##Ctag#273"}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
 
-struct var"##Ctag#234"
+struct var"##Ctag#274"
     nnz::Cint
     row_ind::Ptr{Cint}
     col_ind::Ptr{Cint}
     vals::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#234"}, f::Symbol)
+function Base.getproperty(x::Ptr{var"##Ctag#274"}, f::Symbol)
     f === :nnz && return Ptr{Cint}(x + 0)
     f === :row_ind && return Ptr{Ptr{Cint}}(x + 8)
     f === :col_ind && return Ptr{Ptr{Cint}}(x + 16)
@@ -262,14 +266,14 @@ function Base.getproperty(x::Ptr{var"##Ctag#234"}, f::Symbol)
     return getfield(x, f)
 end
 
-function Base.getproperty(x::var"##Ctag#234", f::Symbol)
-    r = Ref{var"##Ctag#234"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#234"}, r)
+function Base.getproperty(x::var"##Ctag#274", f::Symbol)
+    r = Ref{var"##Ctag#274"}(x)
+    ptr = Base.unsafe_convert(Ptr{var"##Ctag#274"}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
-function Base.setproperty!(x::Ptr{var"##Ctag#234"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{var"##Ctag#274"}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
