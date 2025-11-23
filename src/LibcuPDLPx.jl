@@ -10,6 +10,7 @@ export cuPDLPx_jll
     TERMINATION_REASON_DUAL_INFEASIBLE = 3
     TERMINATION_REASON_TIME_LIMIT = 4
     TERMINATION_REASON_ITERATION_LIMIT = 5
+    TERMINATION_REASON_FEAS_POLISH_SUCCESS = 6
 end
 
 struct lp_problem_t
@@ -42,6 +43,7 @@ end
 struct termination_criteria_t
     eps_optimal_relative::Cdouble
     eps_feasible_relative::Cdouble
+    eps_feas_polish_relative::Cdouble
     eps_infeasible::Cdouble
     time_sec_limit::Cdouble
     iteration_limit::Cint
@@ -57,6 +59,7 @@ struct pdhg_parameters_t
     termination_criteria::termination_criteria_t
     restart_params::restart_parameters_t
     reflection_coefficient::Cdouble
+    feasibility_polishing::Bool
 end
 
 struct cupdlpx_result_t
@@ -80,6 +83,8 @@ struct cupdlpx_result_t
     primal_ray_linear_objective::Cdouble
     dual_ray_objective::Cdouble
     termination_reason::termination_reason_t
+    feasibility_polishing_time::Cdouble
+    feasibility_iteration::Cint
 end
 
 @enum matrix_format_t::UInt32 begin
@@ -89,30 +94,30 @@ end
     matrix_coo = 3
 end
 
-struct var"##Ctag#270"
+struct MatrixData
     data::NTuple{32, UInt8}
 end
 
-function Base.getproperty(x::Ptr{var"##Ctag#270"}, f::Symbol)
-    f === :dense && return Ptr{var"##Ctag#271"}(x + 0)
-    f === :csr && return Ptr{var"##Ctag#272"}(x + 0)
-    f === :csc && return Ptr{var"##Ctag#273"}(x + 0)
-    f === :coo && return Ptr{var"##Ctag#274"}(x + 0)
+function Base.getproperty(x::Ptr{MatrixData}, f::Symbol)
+    f === :dense && return Ptr{MatrixDense}(x + 0)
+    f === :csr && return Ptr{MatrixCSR}(x + 0)
+    f === :csc && return Ptr{MatrixCSC}(x + 0)
+    f === :coo && return Ptr{MatrixCOO}(x + 0)
     return getfield(x, f)
 end
 
-function Base.getproperty(x::var"##Ctag#270", f::Symbol)
-    r = Ref{var"##Ctag#270"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#270"}, r)
+function Base.getproperty(x::MatrixData, f::Symbol)
+    r = Ref{MatrixData}(x)
+    ptr = Base.unsafe_convert(Ptr{MatrixData}, r)
     fptr = getproperty(ptr, f)
     GC.@preserve r unsafe_load(fptr)
 end
 
-function Base.setproperty!(x::Ptr{var"##Ctag#270"}, f::Symbol, v)
+function Base.setproperty!(x::Ptr{MatrixData}, f::Symbol, v)
     unsafe_store!(getproperty(x, f), v)
 end
 
-function Base.propertynames(x::var"##Ctag#270", private::Bool = false)
+function Base.propertynames(x::MatrixData, private::Bool = false)
     (:dense, :csr, :csc, :coo, if private
             fieldnames(typeof(x))
         else
@@ -129,7 +134,7 @@ function Base.getproperty(x::Ptr{matrix_desc_t}, f::Symbol)
     f === :n && return Ptr{Cint}(x + 4)
     f === :fmt && return Ptr{matrix_format_t}(x + 8)
     f === :zero_tolerance && return Ptr{Cdouble}(x + 16)
-    f === :data && return Ptr{var"##Ctag#270"}(x + 24)
+    f === :data && return Ptr{MatrixData}(x + 24)
     return getfield(x, f)
 end
 
@@ -180,102 +185,29 @@ function read_mps_file(filename)
     ccall((:read_mps_file, libcupdlpx), Ptr{lp_problem_t}, (Ptr{Cchar},), filename)
 end
 
-struct var"##Ctag#271"
+struct MatrixDense
     A::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#271"}, f::Symbol)
-    f === :A && return Ptr{Ptr{Cdouble}}(x + 0)
-    return getfield(x, f)
-end
 
-function Base.getproperty(x::var"##Ctag#271", f::Symbol)
-    r = Ref{var"##Ctag#271"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#271"}, r)
-    fptr = getproperty(ptr, f)
-    GC.@preserve r unsafe_load(fptr)
-end
-
-function Base.setproperty!(x::Ptr{var"##Ctag#271"}, f::Symbol, v)
-    unsafe_store!(getproperty(x, f), v)
-end
-
-
-struct var"##Ctag#272"
+struct MatrixCSR
     nnz::Cint
     row_ptr::Ptr{Cint}
     col_ind::Ptr{Cint}
     vals::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#272"}, f::Symbol)
-    f === :nnz && return Ptr{Cint}(x + 0)
-    f === :row_ptr && return Ptr{Ptr{Cint}}(x + 8)
-    f === :col_ind && return Ptr{Ptr{Cint}}(x + 16)
-    f === :vals && return Ptr{Ptr{Cdouble}}(x + 24)
-    return getfield(x, f)
-end
 
-function Base.getproperty(x::var"##Ctag#272", f::Symbol)
-    r = Ref{var"##Ctag#272"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#272"}, r)
-    fptr = getproperty(ptr, f)
-    GC.@preserve r unsafe_load(fptr)
-end
-
-function Base.setproperty!(x::Ptr{var"##Ctag#272"}, f::Symbol, v)
-    unsafe_store!(getproperty(x, f), v)
-end
-
-
-struct var"##Ctag#273"
+struct MatrixCSC
     nnz::Cint
     col_ptr::Ptr{Cint}
     row_ind::Ptr{Cint}
     vals::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#273"}, f::Symbol)
-    f === :nnz && return Ptr{Cint}(x + 0)
-    f === :col_ptr && return Ptr{Ptr{Cint}}(x + 8)
-    f === :row_ind && return Ptr{Ptr{Cint}}(x + 16)
-    f === :vals && return Ptr{Ptr{Cdouble}}(x + 24)
-    return getfield(x, f)
-end
 
-function Base.getproperty(x::var"##Ctag#273", f::Symbol)
-    r = Ref{var"##Ctag#273"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#273"}, r)
-    fptr = getproperty(ptr, f)
-    GC.@preserve r unsafe_load(fptr)
-end
-
-function Base.setproperty!(x::Ptr{var"##Ctag#273"}, f::Symbol, v)
-    unsafe_store!(getproperty(x, f), v)
-end
-
-
-struct var"##Ctag#274"
+struct MatrixCOO
     nnz::Cint
     row_ind::Ptr{Cint}
     col_ind::Ptr{Cint}
     vals::Ptr{Cdouble}
 end
-function Base.getproperty(x::Ptr{var"##Ctag#274"}, f::Symbol)
-    f === :nnz && return Ptr{Cint}(x + 0)
-    f === :row_ind && return Ptr{Ptr{Cint}}(x + 8)
-    f === :col_ind && return Ptr{Ptr{Cint}}(x + 16)
-    f === :vals && return Ptr{Ptr{Cdouble}}(x + 24)
-    return getfield(x, f)
-end
-
-function Base.getproperty(x::var"##Ctag#274", f::Symbol)
-    r = Ref{var"##Ctag#274"}(x)
-    ptr = Base.unsafe_convert(Ptr{var"##Ctag#274"}, r)
-    fptr = getproperty(ptr, f)
-    GC.@preserve r unsafe_load(fptr)
-end
-
-function Base.setproperty!(x::Ptr{var"##Ctag#274"}, f::Symbol, v)
-    unsafe_store!(getproperty(x, f), v)
-end
-
 
 end # module
