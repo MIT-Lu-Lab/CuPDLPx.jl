@@ -229,4 +229,115 @@ const Lib = cuPDLPx.LibcuPDLPx
         rm(mps_path) # delete temp file
     end
 
+    # ==========================================
+    # 7. Integration Test: Direct Matrix Construction
+    # ==========================================
+    @testset "Direct API Solve" begin
+        println("\n   > Starting Direct API Solve Test...")
+
+        # -------------------------------------------------------
+        # Problem Data Definition
+        #  maximize
+        #        x +   y + 2 z
+        #  subject to
+        #        x + 2 y + 3 z <= 4
+        #        x +   y       >= 1
+        #        0 <= x, y, z <= 1
+        # -------------------------------------------------------
+        n_vars = 3
+        m_cons = 2
+
+        # 1. Objective Vector (Minimize direction)
+        c = Cdouble[-1.0, -1.0, -2.0]
+        obj_const = Cdouble[0.0] # Must be a pointer
+
+        # 2. Variable Bounds (Relax Binary -> [0, 1])
+        var_lb = Cdouble[0.0, 0.0, 0.0]
+        var_ub = Cdouble[1.0, 1.0, 1.0]
+
+        # 3. Constraint Matrix Data (CSR Format)
+        # Row 0:  1.0,  2.0, 3.0  (indices 0, 1, 2)
+        # Row 1: -1.0, -1.0       (indices 0, 1)
+        csr_vals    = Cdouble[1.0, 2.0, 3.0, -1.0, -1.0]
+        csr_col_ind = Cint[0, 1, 2, 0, 1]
+        csr_row_ptr = Cint[0, 3, 5]
+        nnz = Cint(5)
+
+        # 4. Constraint Bounds
+        # Row 0: ... <= 4.0  -> (-Inf, 4.0]
+        # Row 1: ... <= -1.0 -> (-Inf, -1.0]
+        con_lb = Cdouble[-Inf, -Inf]
+        con_ub = Cdouble[4.0, -1.0]
+
+        # -------------------------------------------------------
+        # C Struct Construction
+        # -------------------------------------------------------
+        
+        # A. Construct MatrixCSR
+        A_csr = Lib.MatrixCSR(
+            nnz,
+            pointer(csr_row_ptr),
+            pointer(csr_col_ind),
+            pointer(csr_vals)
+        )
+
+        # B. Construct matrix_desc_t        
+        # 1. Allocate zeroed struct on Julia side
+        A_desc_ref = Ref{Lib.matrix_desc_t}()
+        A_desc_ref[] = Lib.matrix_desc_t(ntuple(_ -> UInt8(0), 56)) # Clear memory
+        A_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, A_desc_ref)
+
+        # 2. Set Scalar Fields
+        A_desc_ptr.m = Cint(m_cons)
+        A_desc_ptr.n = Cint(n_vars)
+        A_desc_ptr.fmt = Lib.matrix_csr
+        A_desc_ptr.zero_tolerance = 0.0
+
+        # 3. Set The Union Data
+        A_desc_ptr.data.csr = A_csr
+
+        # -------------------------------------------------------
+        # Create and Solve
+        # -------------------------------------------------------
+        
+        # Create LP Problem
+        prob = Lib.create_lp_problem(
+            pointer(c),
+            A_desc_ptr,
+            pointer(con_lb),
+            pointer(con_ub),
+            pointer(var_lb),
+            pointer(var_ub),
+            pointer(obj_const)
+        )
+        @test prob != C_NULL
+
+        # Setup Parameters
+        params_ref = Ref{Lib.pdhg_parameters_t}()
+        params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
+        Lib.set_default_parameters(params_ptr)
+
+        # Solve
+        result_ptr = Lib.solve_lp_problem(prob, params_ptr)
+        @test result_ptr != C_NULL
+        
+        result = unsafe_load(result_ptr)
+
+        # -------------------------------------------------------
+        # Validation
+        # -------------------------------------------------------
+        println("   > Direct Solve Status: $(result.termination_reason)")
+        println("   > Direct Solve Obj: $(result.primal_objective_value)")
+
+        # Optimal happens at x=1, y=0, z=1 => Obj = 3.
+        # Since we minimized negative: Target = -3.0
+        @test result.termination_reason == Lib.TERMINATION_REASON_OPTIMAL
+        @test isapprox(result.primal_objective_value, -3.0, atol=1e-4)
+
+        # Cleanup
+        Lib.cupdlpx_result_free(result_ptr)
+        Lib.lp_problem_free(prob)
+        println("   > Direct API Solve test passed.")
+    end
+
 end
