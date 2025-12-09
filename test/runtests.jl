@@ -341,3 +341,5 @@ const Lib = cuPDLPx.LibcuPDLPx
     end
 
 end
+
+include("MOI_wrapper.jl")
