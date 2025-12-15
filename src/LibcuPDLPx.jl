@@ -1,6 +1,8 @@
 module LibcuPDLPx
 
 using cuPDLPx_jll
+# TODO: I have to add this in my local environment. This might be a issue in JLL.
+const libcupdlpx = "/home/zdpeng/.julia/artifacts/4d407e51174c3bfe2f138e6e1db2531d0bc6240d/lib/libcupdlpx.so"
 export cuPDLPx_jll
 
 @enum termination_reason_t::UInt32 begin
@@ -51,15 +53,15 @@ end
 
 struct pdhg_parameters_t
     l_inf_ruiz_iterations::Cint
-    has_pock_chambolle_alpha::Bool
+    has_pock_chambolle_alpha::Cint
     pock_chambolle_alpha::Cdouble
-    bound_objective_rescaling::Bool
-    verbose::Bool
+    bound_objective_rescaling::Cint
+    verbose::Cint
     termination_evaluation_frequency::Cint
     termination_criteria::termination_criteria_t
     restart_params::restart_parameters_t
     reflection_coefficient::Cdouble
-    feasibility_polishing::Bool
+    feasibility_polishing::Cint
 end
 
 struct cupdlpx_result_t
