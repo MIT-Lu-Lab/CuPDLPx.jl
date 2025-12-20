@@ -1,8 +1,7 @@
 module LibcuPDLPx
 
 using cuPDLPx_jll
-# TODO: I have to add this in my local environment. This might be a issue in JLL.
-const libcupdlpx = "/home/zdpeng/.julia/artifacts/4d407e51174c3bfe2f138e6e1db2531d0bc6240d/lib/libcupdlpx.so"
+const libcupdlpx = cuPDLPx_jll.libcupdlpx
 export cuPDLPx_jll
 
 @enum termination_reason_t::UInt32 begin
