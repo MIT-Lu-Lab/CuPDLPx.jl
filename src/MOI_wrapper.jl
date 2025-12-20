@@ -308,7 +308,7 @@ function MOI.get(optimizer::Optimizer, attr::MOI.DualStatus)
     if attr.result_index > MOI.get(optimizer, MOI.ResultCount())
         return MOI.NO_SOLUTION
     end
-    return _PRIMAL_STATUS_MAP[optimizer.result.termination_reason]
+    return _DUAL_STATUS_MAP[optimizer.result.termination_reason]
 end
 
 function MOI.get(
