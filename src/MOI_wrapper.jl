@@ -39,7 +39,7 @@ Create a new cuPDLPx optimizer.
 mutable struct Optimizer <: MOI.AbstractOptimizer
     result::Union{Nothing,Lib.cupdlpx_result_t}
     parameters::Lib.pdhg_parameters_t
-    num_equalities::Int
+    sets::Union{Nothing,_LPProductOfSets{Cdouble}}
     max_sense::Bool
     silent::Bool
 
@@ -49,7 +49,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref),
         )
 
-        return new(nothing, params_ref[], 0, false, false)
+        return new(nothing, params_ref[], nothing, false, false)
     end
 end
 
@@ -125,6 +125,7 @@ end
 
 function MOI.empty!(optimizer::Optimizer)
     optimizer.result = nothing
+    optimizer.sets = nothing
     return
 end
 
@@ -207,10 +208,7 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     end
     obj_const = [_flip_sense(dest, MOI.constant(obj))]
 
-    dest.num_equalities = MOI.get(
-        src,
-        MOI.NumberOfConstraints{MOI.ScalarAffineFunction{Float64},MOI.EqualTo{Float64}}(),
-    )
+    dest.sets = src.constraints.sets
 
     matrix_desc_ref = create_matrix_desc_ref(src.constraints.coefficients)
 
@@ -311,7 +309,7 @@ end
 
 function MOI.get(optimizer::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableIndex)
     MOI.check_result_index_bounds(optimizer, attr)
-    return optimizer.result.primal_solution[vi.value]
+    return unsafe_load(optimizer.result.primal_solution, vi.value)
 end
 
 function MOI.get(optimizer::Optimizer, attr::MOI.DualStatus)
@@ -324,19 +322,11 @@ end
 function MOI.get(
     optimizer::Optimizer,
     attr::MOI.ConstraintDual,
-    ci::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64},MOI.EqualTo{Float64}},
+    ci::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64}},
 )
     MOI.check_result_index_bounds(optimizer, attr)
-    return optimizer.result.dual_solution[ci.value]
-end
-
-function MOI.get(
-    optimizer::Optimizer,
-    attr::MOI.ConstraintDual,
-    ci::MOI.ConstraintIndex{MOI.ScalarAffineFunction{Float64},MOI.GreaterThan{Float64}},
-)
-    MOI.check_result_index_bounds(optimizer, attr)
-    return optimizer.result.dual_solution[optimizer.num_equalities+ci.value]
+    row = only(MOI.Utilities.rows(optimizer.sets, ci))
+    return unsafe_load(optimizer.result.dual_solution, row)
 end
 
 function MOI.get(optimizer::Optimizer, ::MOI.ResultCount)
