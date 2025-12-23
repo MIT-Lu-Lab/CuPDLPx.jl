@@ -61,16 +61,28 @@ struct pdhg_parameters_t
     restart_params::restart_parameters_t
     reflection_coefficient::Cdouble
     feasibility_polishing::Cint
+    presolve::Cint
 end
 
 struct cupdlpx_result_t
     num_variables::Cint
     num_constraints::Cint
+    num_nonzeros::Cint
+
+    num_reduced_variables::Cint
+    num_reduced_constraints::Cint
+    num_reduced_nonzeros::Cint
+
     primal_solution::Ptr{Cdouble}
     dual_solution::Ptr{Cdouble}
+    reduced_cost::Ptr{Cdouble}
+
     total_count::Cint
     rescaling_time_sec::Cdouble
     cumulative_time_sec::Cdouble
+    presolve_time::Cdouble
+    presolve_status::Cint
+
     absolute_primal_residual::Cdouble
     relative_primal_residual::Cdouble
     absolute_dual_residual::Cdouble
