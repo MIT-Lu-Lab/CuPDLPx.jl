@@ -1,6 +1,6 @@
 name = "cuPDLPx"
 uuid = "bcd6524d-1420-4b17-a582-359cb8a71a63"
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 CUDA_Runtime_jll = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
@@ -16,4 +16,4 @@ CUDA_SDK_jll = "13.0.2"
 Clang = "0.19.0"
 MathOptInterface = "1.46.0"
 Test = "1.11.0"
-cuPDLPx_jll = "0.2.1"
+cuPDLPx_jll = "0.2.2"
