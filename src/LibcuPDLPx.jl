@@ -57,6 +57,8 @@ struct pdhg_parameters_t
     bound_objective_rescaling::Cint
     verbose::Cint
     termination_evaluation_frequency::Cint
+    sv_max_iter::Cint
+    sv_tol::Cdouble
     termination_criteria::termination_criteria_t
     restart_params::restart_parameters_t
     reflection_coefficient::Cdouble
