@@ -224,13 +224,13 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     matrix_desc_ref = create_matrix_desc_ref(src.constraints.coefficients)
     matrix_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, matrix_desc_ref)
 
-    solve_params = dest.parameters
     # TODO: not working
+    # solve_params = dest.parameters
     # if dest.silent
     #     solve_params = _update_immutable(solve_params, :verbose, Cint(0))
     # end
-    params_ref = Ref{Lib.pdhg_parameters_t}(solve_params)
-    params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
+    # params_ref = Ref{Lib.pdhg_parameters_t}(solve_params)
+    # params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
     params_ref = Ref(dest.parameters)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
