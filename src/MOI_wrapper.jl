@@ -38,6 +38,8 @@ Create a new cuPDLPx optimizer.
 """
 mutable struct Optimizer <: MOI.AbstractOptimizer
     result::Union{Nothing,Lib.cupdlpx_result_t}
+    native_result_ptr::Ptr{Lib.cupdlpx_result_t}
+    native_problem_ptr::Ptr{Lib.lp_problem_t}
     parameters::Lib.pdhg_parameters_t
     sets::Union{Nothing,_LPProductOfSets{Cdouble}}
     max_sense::Bool
@@ -49,7 +51,7 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
             Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref),
         )
 
-        return new(nothing, params_ref[], nothing, false, false)
+        return new(nothing, C_NULL, C_NULL, params_ref[], nothing, false, false)
     end
 end
 
@@ -124,6 +126,14 @@ function MOI.is_empty(optimizer::Optimizer)
 end
 
 function MOI.empty!(optimizer::Optimizer)
+    if optimizer.native_result_ptr != C_NULL
+        Lib.cupdlpx_result_free(optimizer.native_result_ptr)
+        optimizer.native_result_ptr = C_NULL
+    end
+    if optimizer.native_problem_ptr != C_NULL
+        Lib.lp_problem_free(optimizer.native_problem_ptr)
+        optimizer.native_problem_ptr = C_NULL
+    end
     optimizer.result = nothing
     optimizer.sets = nothing
     return
@@ -169,11 +179,14 @@ end
 function create_matrix_desc_ref(
     A::MOI.Utilities.MutableSparseMatrixCSC{Cdouble,Cint,MOI.Utilities.ZeroBasedIndexing},
 )
+    colptr_ptr = isempty(A.colptr) ? C_NULL : pointer(A.colptr)
+    rowval_ptr = isempty(A.rowval) ? C_NULL : pointer(A.rowval)
+    nzval_ptr  = isempty(A.nzval)  ? C_NULL : pointer(A.nzval)
     A_csc = Lib.MatrixCSC(
         length(A.rowval),
-        pointer(A.colptr),
-        pointer(A.rowval),
-        pointer(A.nzval),
+        colptr_ptr,
+        rowval_ptr,
+        nzval_ptr,
     )
 
     desc_ref = Ref{Lib.matrix_desc_t}()
@@ -211,8 +224,10 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     dest.sets = src.constraints.sets
 
     matrix_desc_ref = create_matrix_desc_ref(src.constraints.coefficients)
-
     matrix_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, matrix_desc_ref)
+
+    params_ref = Ref(dest.parameters)
+    params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
     prob = Lib.create_lp_problem(
         pointer(c),
@@ -225,13 +240,12 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     )
     @assert prob != C_NULL
 
-    params_ref = Ref(dest.parameters)
-    params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
-
     result_ptr = Lib.solve_lp_problem(prob, params_ptr)
     @assert result_ptr != C_NULL
 
     dest.result = unsafe_load(result_ptr)
+    dest.native_result_ptr = result_ptr 
+    Lib.lp_problem_free(prob)
 
     return MOI.Utilities.identity_index_map(src), false
 end
