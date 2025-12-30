@@ -111,8 +111,6 @@ end
 MOI.supports(::Optimizer, ::MOI.Silent) = true
 function MOI.set(optimizer::Optimizer, ::MOI.Silent, value::Bool)
     optimizer.silent = value
-    new_verbose = value ? 0 : 1
-    optimizer.parameters = _update_immutable(optimizer.parameters, :verbose, new_verbose)
     return
 end
 MOI.get(optimizer::Optimizer, ::MOI.Silent) = optimizer.silent
@@ -225,6 +223,14 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
 
     matrix_desc_ref = create_matrix_desc_ref(src.constraints.coefficients)
     matrix_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, matrix_desc_ref)
+
+    solve_params = dest.parameters
+    # TODO: not working
+    # if dest.silent
+    #     solve_params = _update_immutable(solve_params, :verbose, Cint(0))
+    # end
+    params_ref = Ref{Lib.pdhg_parameters_t}(solve_params)
+    params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
     params_ref = Ref(dest.parameters)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
