@@ -235,23 +235,25 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     params_ref = Ref(dest.parameters)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
-    prob = Lib.create_lp_problem(
-        pointer(c),
-        matrix_desc_ptr,
-        pointer(src.constraints.constants.lower),
-        pointer(src.constraints.constants.upper),
-        pointer(src.variables.lower),
-        pointer(src.variables.upper),
-        pointer(obj_const),
-    )
-    @assert prob != C_NULL
+    GC.@preserve params_ref begin
+        prob = Lib.create_lp_problem(
+            pointer(c),
+            matrix_desc_ptr,
+            pointer(src.constraints.constants.lower),
+            pointer(src.constraints.constants.upper),
+            pointer(src.variables.lower),
+            pointer(src.variables.upper),
+            pointer(obj_const),
+        )
+        @assert prob != C_NULL
 
-    result_ptr = Lib.solve_lp_problem(prob, params_ptr)
-    @assert result_ptr != C_NULL
+        result_ptr = Lib.solve_lp_problem(prob, params_ptr)
+        @assert result_ptr != C_NULL
 
-    dest.result = unsafe_load(result_ptr)
-    dest.native_result_ptr = result_ptr 
-    Lib.lp_problem_free(prob)
+        dest.result = unsafe_load(result_ptr)
+        dest.native_result_ptr = result_ptr 
+        Lib.lp_problem_free(prob)
+    end
 
     return MOI.Utilities.identity_index_map(src), false
 end
