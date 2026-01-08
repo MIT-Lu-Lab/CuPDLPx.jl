@@ -134,6 +134,7 @@ function MOI.empty!(optimizer::Optimizer)
     end
     optimizer.result = nothing
     optimizer.sets = nothing
+    optimizer.max_sense = false
     return
 end
 
@@ -205,12 +206,12 @@ end
 
 function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     MOI.empty!(dest)
+    dest.max_sense = MOI.get(src, MOI.ObjectiveSense()) == MOI.MAX_SENSE
     if src.constraints.coefficients.n == 0
         dest.result = nothing
         return MOI.Utilities.identity_index_map(src), false
     end
 
-    dest.max_sense = MOI.get(src, MOI.ObjectiveSense()) == MOI.MAX_SENSE
     obj = MOI.get(src, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
 
     c = zeros(Cdouble, src.constraints.coefficients.n)
