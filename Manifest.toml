@@ -2,7 +2,7 @@
 
 julia_version = "1.12.2"
 manifest_format = "2.0"
-project_hash = "2ccee5e212b4700701dc3d1848104837eff8853c"
+project_hash = "54309def7c908068951b3458be89fae48b84f475"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -35,9 +35,9 @@ version = "0.5.0"
 
 [[deps.CUDA_Driver_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "2023be0b10c56d259ea84a94dbfc021aa452f2c6"
+git-tree-sha1 = "63b4911c80ade9de10ec4b766e99cb1a628f465f"
 uuid = "4ee394cb-3365-5eb0-8335-949819d2adfc"
-version = "13.0.2+0"
+version = "13.1.0+0"
 
 [[deps.CUDA_Runtime_jll]]
 deps = ["Artifacts", "CUDA_Driver_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
@@ -47,9 +47,9 @@ version = "0.19.2+0"
 
 [[deps.CUDA_SDK_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "8c546633bdb21b7b806276c0677a5656b4f675bc"
+git-tree-sha1 = "f2f5388f3141f39a0d2a9145ceaa280fb055ec60"
 uuid = "6cbf2f2e-7e60-5632-ac76-dca2274e0be0"
-version = "13.0.2+1"
+version = "13.1.0+0"
 
 [[deps.Clang]]
 deps = ["CEnum", "Clang_jll", "Downloads", "Pkg", "TOML"]
@@ -334,9 +334,9 @@ version = "1.3.3"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "0f27480397253da18fe2c12a4ba4eb9eb208bf3d"
+git-tree-sha1 = "522f093a29b31a93e34eaea17ba055d850edea28"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.5.0"
+version = "1.5.1"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -460,13 +460,13 @@ version = "1.3.1+2"
 deps = ["CUDA_Runtime_jll", "CUDA_SDK_jll", "Clang", "MathOptInterface", "Test", "cuPDLPx_jll"]
 path = "."
 uuid = "bcd6524d-1420-4b17-a582-359cb8a71a63"
-version = "0.1.4"
+version = "0.2.2"
 
 [[deps.cuPDLPx_jll]]
 deps = ["Artifacts", "CUDA_Runtime_jll", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "TOML", "Zlib_jll"]
-git-tree-sha1 = "ba09f738d421a949c9058167743c33275cf58400"
+git-tree-sha1 = "84f425232e24b1d8a961c5fc3b3d30e2d9b834ad"
 uuid = "bca5daad-f4d3-5101-ae12-8b63679c982c"
-version = "0.1.4+0"
+version = "0.2.2+0"
 
 [[deps.libLLVM_jll]]
 deps = ["Artifacts", "Libdl"]
