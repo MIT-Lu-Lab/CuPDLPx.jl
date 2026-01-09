@@ -24,6 +24,14 @@ const OptimizerCache = MOI.Utilities.GenericModel{
 
 Base.show(io::IO, ::Type{OptimizerCache}) = print(io, "cuPDLPx.OptimizerCache")
 
+function MOI.supports(::OptimizerCache, ::MOI.RawOptimizerAttribute)
+    return true
+end
+
+function MOI.set(model::OptimizerCache, ::MOI.RawOptimizerAttribute, ::Any)
+    return
+end
+
 const BOUND_SETS = Union{
     MOI.GreaterThan{Float64},
     MOI.LessThan{Float64},
@@ -64,7 +72,11 @@ end
 # ====================
 function _update_immutable(obj::T, field::Symbol, value) where {T}
     args = map(fieldnames(T)) do f
-        f == field ? value : getfield(obj, f)
+        if f == field
+            convert(fieldtype(T, f), value)
+        else
+            getfield(obj, f)
+        end
     end
     return T(args...)
 end
@@ -76,15 +88,22 @@ end
 MOI.get(::Optimizer, ::MOI.SolverName) = "cuPDLPx"
 
 function MOI.supports(::Optimizer, param::MOI.RawOptimizerAttribute)
-    return hasfield(Lib.pdhg_parameters_t, Symbol(param.name))
+    s = Symbol(param.name)
+    return hasfield(Lib.pdhg_parameters_t, s) || 
+           hasfield(Lib.termination_criteria_t, s)
 end
 
 function MOI.set(optimizer::Optimizer, param::MOI.RawOptimizerAttribute, value)
-    if !MOI.supports(optimizer, param)
+    s = Symbol(param.name)
+    if hasfield(Lib.pdhg_parameters_t, s)
+        optimizer.parameters = _update_immutable(optimizer.parameters, s, value)
+    elseif hasfield(Lib.termination_criteria_t, s)
+        current_criteria = optimizer.parameters.termination_criteria
+        new_criteria = _update_immutable(current_criteria, s, value)
+        optimizer.parameters = _update_immutable(optimizer.parameters, :termination_criteria, new_criteria)
+    else
         throw(MOI.UnsupportedAttribute(param))
     end
-    optimizer.parameters =
-        _update_immutable(optimizer.parameters, Symbol(param.name), value)
     return
 end
 
