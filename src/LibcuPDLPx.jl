@@ -1,6 +1,7 @@
 module LibcuPDLPx
 
 using cuPDLPx_jll
+const libcupdlpx = cuPDLPx_jll.libcupdlpx
 export cuPDLPx_jll
 
 @enum termination_reason_t::UInt32 begin
@@ -51,25 +52,39 @@ end
 
 struct pdhg_parameters_t
     l_inf_ruiz_iterations::Cint
-    has_pock_chambolle_alpha::Bool
+    has_pock_chambolle_alpha::Cint
     pock_chambolle_alpha::Cdouble
-    bound_objective_rescaling::Bool
-    verbose::Bool
+    bound_objective_rescaling::Cint
+    verbose::Cint
     termination_evaluation_frequency::Cint
+    sv_max_iter::Cint
+    sv_tol::Cdouble
     termination_criteria::termination_criteria_t
     restart_params::restart_parameters_t
     reflection_coefficient::Cdouble
-    feasibility_polishing::Bool
+    feasibility_polishing::Cint
+    presolve::Cint
 end
 
 struct cupdlpx_result_t
     num_variables::Cint
     num_constraints::Cint
+    num_nonzeros::Cint
+
+    num_reduced_variables::Cint
+    num_reduced_constraints::Cint
+    num_reduced_nonzeros::Cint
+
     primal_solution::Ptr{Cdouble}
     dual_solution::Ptr{Cdouble}
+    reduced_cost::Ptr{Cdouble}
+
     total_count::Cint
     rescaling_time_sec::Cdouble
     cumulative_time_sec::Cdouble
+    presolve_time::Cdouble
+    presolve_status::Cint
+
     absolute_primal_residual::Cdouble
     relative_primal_residual::Cdouble
     absolute_dual_residual::Cdouble
