@@ -1,7 +1,6 @@
 module LibcuPDLPx
 
 using cuPDLPx_jll
-const libcupdlpx = cuPDLPx_jll.libcupdlpx
 export cuPDLPx_jll
 
 @enum termination_reason_t::UInt32 begin
@@ -9,9 +8,10 @@ export cuPDLPx_jll
     TERMINATION_REASON_OPTIMAL = 1
     TERMINATION_REASON_PRIMAL_INFEASIBLE = 2
     TERMINATION_REASON_DUAL_INFEASIBLE = 3
-    TERMINATION_REASON_TIME_LIMIT = 4
-    TERMINATION_REASON_ITERATION_LIMIT = 5
-    TERMINATION_REASON_FEAS_POLISH_SUCCESS = 6
+    TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED = 4
+    TERMINATION_REASON_TIME_LIMIT = 5
+    TERMINATION_REASON_ITERATION_LIMIT = 6
+    TERMINATION_REASON_FEAS_POLISH_SUCCESS = 7
 end
 
 struct lp_problem_t
@@ -52,39 +52,35 @@ end
 
 struct pdhg_parameters_t
     l_inf_ruiz_iterations::Cint
-    has_pock_chambolle_alpha::Cint
+    has_pock_chambolle_alpha::Bool
     pock_chambolle_alpha::Cdouble
-    bound_objective_rescaling::Cint
-    verbose::Cint
+    bound_objective_rescaling::Bool
+    verbose::Bool
     termination_evaluation_frequency::Cint
     sv_max_iter::Cint
     sv_tol::Cdouble
     termination_criteria::termination_criteria_t
     restart_params::restart_parameters_t
     reflection_coefficient::Cdouble
-    feasibility_polishing::Cint
-    presolve::Cint
+    feasibility_polishing::Bool
+    presolve::Bool
 end
 
 struct cupdlpx_result_t
     num_variables::Cint
     num_constraints::Cint
     num_nonzeros::Cint
-
     num_reduced_variables::Cint
     num_reduced_constraints::Cint
     num_reduced_nonzeros::Cint
-
     primal_solution::Ptr{Cdouble}
     dual_solution::Ptr{Cdouble}
     reduced_cost::Ptr{Cdouble}
-
     total_count::Cint
     rescaling_time_sec::Cdouble
     cumulative_time_sec::Cdouble
     presolve_time::Cdouble
     presolve_status::Cint
-
     absolute_primal_residual::Cdouble
     relative_primal_residual::Cdouble
     absolute_dual_residual::Cdouble
