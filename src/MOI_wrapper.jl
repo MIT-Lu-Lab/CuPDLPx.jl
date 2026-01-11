@@ -24,13 +24,6 @@ const OptimizerCache = MOI.Utilities.GenericModel{
 
 Base.show(io::IO, ::Type{OptimizerCache}) = print(io, "cuPDLPx.OptimizerCache")
 
-function MOI.supports(::OptimizerCache, ::MOI.RawOptimizerAttribute)
-    return true
-end
-
-function MOI.set(model::OptimizerCache, ::MOI.RawOptimizerAttribute, ::Any)
-    return
-end
 
 const BOUND_SETS = Union{
     MOI.GreaterThan{Float64},
@@ -65,6 +58,21 @@ end
 
 function MOI.default_cache(::Optimizer, ::Type)
     return OptimizerCache()
+end
+
+const _CO = MOI.Utilities.CachingOptimizer{Optimizer, OptimizerCache}
+
+function MOI.supports(model::_CO, attr::MOI.RawOptimizerAttribute)
+    return MOI.supports(model.optimizer, attr)
+end
+
+function MOI.set(model::_CO, attr::MOI.RawOptimizerAttribute, value)
+    MOI.set(model.optimizer, attr, value)
+    return
+end
+
+function MOI.get(model::_CO, attr::MOI.RawOptimizerAttribute)
+    return MOI.get(model.optimizer, attr)
 end
 
 # ====================
@@ -108,10 +116,14 @@ function MOI.set(optimizer::Optimizer, param::MOI.RawOptimizerAttribute, value)
 end
 
 function MOI.get(optimizer::Optimizer, param::MOI.RawOptimizerAttribute)
-    if !MOI.supports(optimizer, param)
+    s = Symbol(param.name)
+    if hasfield(Lib.pdhg_parameters_t, s)
+        return getfield(optimizer.parameters, s)
+    elseif hasfield(Lib.termination_criteria_t, s)
+        return getfield(optimizer.parameters.termination_criteria, s)
+    else
         throw(MOI.UnsupportedAttribute(param))
     end
-    return getfield(optimizer.parameters, Symbol(param.name))
 end
 
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
@@ -209,7 +221,7 @@ function create_matrix_desc_ref(
 
     desc_ref = Ref{Lib.matrix_desc_t}()
 
-    desc_val = Lib.matrix_desc_t(ntuple(_ -> UInt8(0), 56))
+    desc_val = Lib.matrix_desc_t(ntuple(_ -> 0x00, sizeof(Lib.matrix_desc_t)))
     desc_ref[] = desc_val
 
     desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, desc_ref)
@@ -255,7 +267,7 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     params_ref = Ref(dest.parameters)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
-    GC.@preserve params_ref begin
+    GC.@preserve params_ref c obj_const src begin
         prob = Lib.create_lp_problem(
             pointer(c),
             matrix_desc_ptr,
