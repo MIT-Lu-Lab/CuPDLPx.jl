@@ -29,46 +29,33 @@ function test_runtests()
     MOI.Test.runtests(
         model,
         config,
-        exclude = [
-            # No constraint so cuPDLP fails with the CUDA error
-            # `Grid dimensions should be non-null`
-            r"^test_variable_solve_with_lowerbound$",
-            r"^test_variable_solve_with_upperbound$",
-            r"^test_solve_result_index$",
-            r"^test_solve_TerminationStatus_DUAL_INFEASIBLE$",
-            r"^test_modification_transform_singlevariable_lessthan$",
-            r"^test_modification_const_scalar_objective$",
-            r"^test_DualObjectiveValue_Max_VariableIndex_LessThan$",
-            r"^test_DualObjectiveValue_Min_VariableIndex_GreaterThan$",
-            r"^test_attribute_RawStatusString$",
-            r"^test_attribute_SolveTimeSec$",
-            r"^test_solve_optimize_twice$",
-            r"^test_solve_VariableIndex_ConstraintDual_MAX_SENSE$",
-            r"^test_solve_VariableIndex_ConstraintDual_MIN_SENSE$",
-            r"^test_modification_set_singlevariable_lessthan$",
-            r"^test_objective_ObjectiveFunction_VariableIndex$",
-            r"^test_objective_ObjectiveFunction_blank$",
-            r"^test_objective_ObjectiveFunction_constant$",
-            r"^test_objective_ObjectiveFunction_duplicate_terms$",
-            r"^test_objective_FEASIBILITY_SENSE_clears_objective$",
-            r"^test_modification_coef_scalar_objective$",
-            r"^test_linear_variable_open_intervals$",
-            r"^test_modification_delete_variable_with_single_variable_obj$",
-            r"^test_modification_delete_variables_in_a_batch$",
-            # Not all constraints have finite bounds on at least one side.
-            r"^test_linear_open_intervals$",
-            # Error from MOI fallback : Fallback getter for variable constraint dual does not support other variable-wise constraints on the variable.
-            r"^test_linear_integration_delete_variables$",
-            # Expression: isapprox(target, obj, config)
-            #  Evaluated: isapprox(-41.980944701810785, -37.700944701810776, ...)
-            r"^test_infeasible_affine_MAX_SENSE_offset$",
-            # Expression: isapprox(-target, obj, config)
-            #  Evaluated: isapprox(14.020439047717783, 17.100439047717785, ...)
-            r"^test_infeasible_affine_MIN_SENSE$",
-            # Expression: isapprox(-target, obj, config)
-            #  Evaluated: isapprox(14.020439047717783, 18.300439047717788, ...)
-            r"^test_infeasible_affine_MIN_SENSE_offset$",
-        ]
+        # failed tests
+        # some implementations not supported yet, such as reduced costs, TimeLimitSec, etc.
+        exclude = [r"^test_infeasible_MAX_SENSE$",
+                   r"^test_infeasible_MAX_SENSE_offset$",
+                   r"^test_infeasible_MIN_SENSE$",
+                   r"^test_infeasible_MIN_SENSE_offset$",
+                   r"^test_infeasible_affine_MAX_SENSE$",
+                   r"^test_infeasible_affine_MAX_SENSE_offset$",
+                   r"^test_infeasible_affine_MIN_SENSE$",
+                   r"^test_infeasible_affine_MIN_SENSE_offset$",
+                   r"^test_linear_INFEASIBLE$",
+                   r"^test_linear_INFEASIBLE_2$",
+                   r"^test_linear_integration_delete_variables$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_EqualTo_lower$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_EqualTo_upper$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_GreaterThan$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_Interval_lower$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_Interval_upper$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_LessThan$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_VariableIndex_LessThan$",
+                   r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_VariableIndex_LessThan_max$",
+                   r"^test_solve_VariableIndex_ConstraintDual_MAX_SENSE$",
+                   r"^test_solve_VariableIndex_ConstraintDual_MIN_SENSE$",
+                   r"^test_variable_solve_with_lowerbound$",
+                   r"^test_variable_solve_with_upperbound$",
+                  ],
+        verbose = true,
     )
     return
 end

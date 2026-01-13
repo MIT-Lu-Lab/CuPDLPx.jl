@@ -24,6 +24,7 @@ const OptimizerCache = MOI.Utilities.GenericModel{
 
 Base.show(io::IO, ::Type{OptimizerCache}) = print(io, "cuPDLPx.OptimizerCache")
 
+
 const BOUND_SETS = Union{
     MOI.GreaterThan{Float64},
     MOI.LessThan{Float64},
@@ -64,7 +65,11 @@ end
 # ====================
 function _update_immutable(obj::T, field::Symbol, value) where {T}
     args = map(fieldnames(T)) do f
-        f == field ? value : getfield(obj, f)
+        if f == field
+            convert(fieldtype(T, f), value)
+        else
+            getfield(obj, f)
+        end
     end
     return T(args...)
 end
@@ -76,23 +81,34 @@ end
 MOI.get(::Optimizer, ::MOI.SolverName) = "cuPDLPx"
 
 function MOI.supports(::Optimizer, param::MOI.RawOptimizerAttribute)
-    return hasfield(Lib.pdhg_parameters_t, Symbol(param.name))
+    s = Symbol(param.name)
+    return hasfield(Lib.pdhg_parameters_t, s) || 
+           hasfield(Lib.termination_criteria_t, s)
 end
 
 function MOI.set(optimizer::Optimizer, param::MOI.RawOptimizerAttribute, value)
-    if !MOI.supports(optimizer, param)
+    s = Symbol(param.name)
+    if hasfield(Lib.pdhg_parameters_t, s)
+        optimizer.parameters = _update_immutable(optimizer.parameters, s, value)
+    elseif hasfield(Lib.termination_criteria_t, s)
+        current_criteria = optimizer.parameters.termination_criteria
+        new_criteria = _update_immutable(current_criteria, s, value)
+        optimizer.parameters = _update_immutable(optimizer.parameters, :termination_criteria, new_criteria)
+    else
         throw(MOI.UnsupportedAttribute(param))
     end
-    optimizer.parameters =
-        _update_immutable(optimizer.parameters, Symbol(param.name), value)
     return
 end
 
 function MOI.get(optimizer::Optimizer, param::MOI.RawOptimizerAttribute)
-    if !MOI.supports(optimizer, param)
+    s = Symbol(param.name)
+    if hasfield(Lib.pdhg_parameters_t, s)
+        return getfield(optimizer.parameters, s)
+    elseif hasfield(Lib.termination_criteria_t, s)
+        return getfield(optimizer.parameters.termination_criteria, s)
+    else
         throw(MOI.UnsupportedAttribute(param))
     end
-    return getfield(optimizer.parameters, Symbol(param.name))
 end
 
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
@@ -190,7 +206,7 @@ function create_matrix_desc_ref(
 
     desc_ref = Ref{Lib.matrix_desc_t}()
 
-    desc_val = Lib.matrix_desc_t(ntuple(_ -> UInt8(0), 56))
+    desc_val = Lib.matrix_desc_t(ntuple(_ -> 0x00, sizeof(Lib.matrix_desc_t)))
     desc_ref[] = desc_val
 
     desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, desc_ref)
@@ -225,18 +241,15 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     matrix_desc_ref = create_matrix_desc_ref(src.constraints.coefficients)
     matrix_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, matrix_desc_ref)
 
-    # TODO: not working
-    # solve_params = dest.parameters
-    # if dest.silent
-    #     solve_params = _update_immutable(solve_params, :verbose, Cint(0))
-    # end
-    # params_ref = Ref{Lib.pdhg_parameters_t}(solve_params)
-    # params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
+    solve_params = dest.parameters
+    if dest.silent
+        solve_params = _update_immutable(solve_params, :verbose, false)
+    end
 
-    params_ref = Ref(dest.parameters)
+    params_ref = Ref(solve_params)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
-    GC.@preserve params_ref begin
+    GC.@preserve params_ref c obj_const src begin
         prob = Lib.create_lp_problem(
             pointer(c),
             matrix_desc_ptr,
@@ -247,13 +260,13 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
             pointer(obj_const),
         )
         @assert prob != C_NULL
+        dest.native_problem_ptr = prob
 
         result_ptr = Lib.solve_lp_problem(prob, params_ptr)
         @assert result_ptr != C_NULL
 
         dest.result = unsafe_load(result_ptr)
         dest.native_result_ptr = result_ptr 
-        Lib.lp_problem_free(prob)
     end
 
     return MOI.Utilities.identity_index_map(src), false
@@ -283,9 +296,10 @@ const _TERMINATION_STATUS_MAP = Dict(
     Lib.TERMINATION_REASON_OPTIMAL => MOI.OPTIMAL,
     Lib.TERMINATION_REASON_PRIMAL_INFEASIBLE => MOI.INFEASIBLE,
     Lib.TERMINATION_REASON_DUAL_INFEASIBLE => MOI.DUAL_INFEASIBLE,
+    Lib.TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED => MOI.INFEASIBLE_OR_UNBOUNDED,
     Lib.TERMINATION_REASON_TIME_LIMIT => MOI.TIME_LIMIT,
     Lib.TERMINATION_REASON_ITERATION_LIMIT => MOI.ITERATION_LIMIT,
-    Lib.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.OTHER_ERROR,
+    Lib.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.OPTIMAL,
 )
 
 function MOI.get(optimizer::Optimizer, ::MOI.TerminationStatus)
@@ -308,9 +322,10 @@ const _PRIMAL_STATUS_MAP = Dict(
     Lib.TERMINATION_REASON_OPTIMAL => MOI.FEASIBLE_POINT,
     Lib.TERMINATION_REASON_PRIMAL_INFEASIBLE => MOI.NO_SOLUTION,
     Lib.TERMINATION_REASON_DUAL_INFEASIBLE => MOI.INFEASIBILITY_CERTIFICATE,
+    Lib.TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED => MOI.UNKNOWN_RESULT_STATUS,
     Lib.TERMINATION_REASON_TIME_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
     Lib.TERMINATION_REASON_ITERATION_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
-    Lib.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.UNKNOWN_RESULT_STATUS,
+    Lib.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.FEASIBLE_POINT,
 )
 
 const _DUAL_STATUS_MAP = Dict(
@@ -318,9 +333,10 @@ const _DUAL_STATUS_MAP = Dict(
     LibcuPDLPx.TERMINATION_REASON_OPTIMAL => MOI.FEASIBLE_POINT,
     LibcuPDLPx.TERMINATION_REASON_PRIMAL_INFEASIBLE => MOI.INFEASIBILITY_CERTIFICATE,
     LibcuPDLPx.TERMINATION_REASON_DUAL_INFEASIBLE => MOI.NO_SOLUTION,
+    Lib.TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED => MOI.UNKNOWN_RESULT_STATUS,
     LibcuPDLPx.TERMINATION_REASON_TIME_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
     LibcuPDLPx.TERMINATION_REASON_ITERATION_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
-    LibcuPDLPx.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.UNKNOWN_RESULT_STATUS,
+    LibcuPDLPx.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.FEASIBLE_POINT,
 )
 
 function MOI.get(optimizer::Optimizer, attr::MOI.PrimalStatus)

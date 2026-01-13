@@ -10,7 +10,7 @@ const Lib = cuPDLPx.LibcuPDLPx
     # ==========================================
     @testset "Enum Mapping" begin
         @test Int(Lib.TERMINATION_REASON_OPTIMAL) == 1
-        @test Int(Lib.TERMINATION_REASON_TIME_LIMIT) == 4
+        @test Int(Lib.TERMINATION_REASON_TIME_LIMIT) == 5
         
         @test Int(Lib.matrix_dense) == 0
         @test Int(Lib.matrix_csr) == 1
@@ -53,7 +53,7 @@ const Lib = cuPDLPx.LibcuPDLPx
     end
 
     # ==========================================
-    # 6. Integration Test: MPS File
+    # 5. Integration Test: MPS File
     # ==========================================
     @testset "MPS File Solve (AFIRO)" begin
         mps_content = """
@@ -154,6 +154,26 @@ const Lib = cuPDLPx.LibcuPDLPx
 
         params_ref = Ref{Lib.pdhg_parameters_t}()
         Lib.set_default_parameters(Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref))
+        # Set verbose explicitly to check propagation through the native API
+        params_val = params_ref[]
+        params_val = Lib.pdhg_parameters_t(
+            params_val.l_inf_ruiz_iterations,
+            params_val.has_pock_chambolle_alpha,
+            params_val.pock_chambolle_alpha,
+            params_val.bound_objective_rescaling,
+            true,  # verbose
+            params_val.termination_evaluation_frequency,
+            params_val.sv_max_iter,
+            params_val.sv_tol,
+            params_val.termination_criteria,
+            params_val.restart_params,
+            params_val.reflection_coefficient,
+            params_val.feasibility_polishing,
+            params_val.presolve,
+        )
+        params_ref[] = params_val
+        @test params_ref[].verbose == true
+
         params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
         
         result_ptr = Lib.solve_lp_problem(prob, params_ptr)
@@ -172,7 +192,7 @@ const Lib = cuPDLPx.LibcuPDLPx
     end
 
     # ==========================================
-    # 7. Integration Test: Direct Matrix Construction
+    # 6. Integration Test: Direct Matrix Construction
     # ==========================================
     @testset "Direct API Solve" begin
         println("\n   > Starting Direct API Solve Test...")
