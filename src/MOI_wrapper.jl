@@ -256,15 +256,12 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     matrix_desc_ref = create_matrix_desc_ref(src.constraints.coefficients)
     matrix_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, matrix_desc_ref)
 
-    # TODO: not working
-    # solve_params = dest.parameters
-    # if dest.silent
-    #     solve_params = _update_immutable(solve_params, :verbose, Cint(0))
-    # end
-    # params_ref = Ref{Lib.pdhg_parameters_t}(solve_params)
-    # params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
+    solve_params = dest.parameters
+    if dest.silent
+        solve_params = _update_immutable(solve_params, :verbose, false)
+    end
 
-    params_ref = Ref(dest.parameters)
+    params_ref = Ref(solve_params)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
     GC.@preserve params_ref c obj_const src begin
@@ -278,13 +275,13 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
             pointer(obj_const),
         )
         @assert prob != C_NULL
+        dest.native_problem_ptr = prob
 
         result_ptr = Lib.solve_lp_problem(prob, params_ptr)
         @assert result_ptr != C_NULL
 
         dest.result = unsafe_load(result_ptr)
         dest.native_result_ptr = result_ptr 
-        Lib.lp_problem_free(prob)
     end
 
     return MOI.Utilities.identity_index_map(src), false
