@@ -60,21 +60,6 @@ function MOI.default_cache(::Optimizer, ::Type)
     return OptimizerCache()
 end
 
-const _CO = MOI.Utilities.CachingOptimizer{Optimizer, OptimizerCache}
-
-function MOI.supports(model::_CO, attr::MOI.RawOptimizerAttribute)
-    return MOI.supports(model.optimizer, attr)
-end
-
-function MOI.set(model::_CO, attr::MOI.RawOptimizerAttribute, value)
-    MOI.set(model.optimizer, attr, value)
-    return
-end
-
-function MOI.get(model::_CO, attr::MOI.RawOptimizerAttribute)
-    return MOI.get(model.optimizer, attr)
-end
-
 # ====================
 #   Helper: Immutable Update
 # ====================
