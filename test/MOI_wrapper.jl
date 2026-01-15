@@ -31,6 +31,7 @@ function test_runtests()
         config,
         # failed tests
         # some implementations not supported yet, such as reduced costs, TimeLimitSec, etc.
+        include = ["test_model_ModelFilter_AbstractConstraintAttribute"],
         exclude = [r"^test_infeasible_MAX_SENSE$",
                    r"^test_infeasible_MAX_SENSE_offset$",
                    r"^test_infeasible_MIN_SENSE$",

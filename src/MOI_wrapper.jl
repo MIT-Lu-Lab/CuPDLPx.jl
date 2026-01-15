@@ -183,6 +183,18 @@ function MOI.supports(
     return true
 end
 
+MOI.supports(
+    ::Optimizer,
+    ::MOI.VariablePrimalStart,
+    ::Type{MOI.VariableIndex}
+) = true
+
+MOI.supports(
+    ::Optimizer,
+    ::Union{MOI.ConstraintPrimalStart,MOI.ConstraintDualStart},
+    ::Type{<:MOI.ConstraintIndex},
+) = true
+
 # ===============================
 #   Optimize
 # ===============================
@@ -249,7 +261,40 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
     params_ref = Ref(solve_params)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
-    GC.@preserve params_ref c obj_const src begin
+    primal_start = zeros(Cdouble, src.constraints.coefficients.n)
+    dual_start = zeros(Cdouble, src.constraints.coefficients.m)
+    has_primal_start = false
+    has_dual_start = false
+
+    vis = MOI.get(src, MOI.ListOfVariableIndices())
+    if MOI.VariablePrimalStart() in MOI.get(src, MOI.ListOfVariableAttributesSet())
+        for (i, vi) in enumerate(vis)
+            start = MOI.get(src, MOI.VariablePrimalStart(), vi)
+            if start !== nothing
+                primal_start[i] = start
+                has_primal_start = true
+            end
+        end
+    end
+
+    for (F, S) in MOI.get(src, MOI.ListOfConstraintTypesPresent())
+        attr_list = MOI.get(src, MOI.ListOfConstraintAttributesSet{F,S}())
+        if !(MOI.ConstraintDualStart() in attr_list)
+            continue
+        end
+        for ci in MOI.get(src, MOI.ListOfConstraintIndices{F,S}())
+            start = MOI.get(src, MOI.ConstraintDualStart(), ci)
+            start === nothing && continue
+            rows = MOI.Utilities.rows(src.constraints.sets, ci)
+            @assert length(rows) == length(start)
+            for (row, v) in zip(rows, start)
+                dual_start[row] = v
+                has_dual_start = true
+            end
+        end
+    end
+
+    GC.@preserve params_ref c obj_const src primal_start dual_start begin
         prob = Lib.create_lp_problem(
             pointer(c),
             matrix_desc_ptr,
@@ -261,6 +306,10 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
         )
         @assert prob != C_NULL
         dest.native_problem_ptr = prob
+
+        if has_primal_start || has_dual_start
+            Lib.set_start_values(prob, pointer(primal_start), pointer(dual_start))
+        end
 
         result_ptr = Lib.solve_lp_problem(prob, params_ptr)
         @assert result_ptr != C_NULL
@@ -277,6 +326,13 @@ function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
     index_map = MOI.copy_to(cache, src)
     MOI.optimize!(dest, cache)
     return index_map, false
+end
+
+function MOI.optimize!(
+    dest::Optimizer,
+    src::MOI.Utilities.UniversalFallback{OptimizerCache},
+)
+    return MOI.optimize!(dest, src.model)
 end
 
 # ====================
