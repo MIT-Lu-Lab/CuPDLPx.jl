@@ -86,6 +86,28 @@ function MOI.supports(::Optimizer, param::MOI.RawOptimizerAttribute)
            hasfield(Lib.termination_criteria_t, s)
 end
 
+MOI.supports(::OptimizerCache, ::MOI.RawOptimizerAttribute) = true
+
+function _raw_attr_storage(model::OptimizerCache)
+    return get!(model.ext, :raw_optimizer_attributes) do
+        Dict{Symbol,Any}()
+    end
+end
+
+function MOI.set(model::OptimizerCache, param::MOI.RawOptimizerAttribute, value)
+    _raw_attr_storage(model)[Symbol(param.name)] = value
+    return
+end
+
+function MOI.get(model::OptimizerCache, param::MOI.RawOptimizerAttribute)
+    store = _raw_attr_storage(model)
+    s = Symbol(param.name)
+    if haskey(store, s)
+        return store[s]
+    end
+    throw(MOI.UnsupportedAttribute(param))
+end
+
 function MOI.set(optimizer::Optimizer, param::MOI.RawOptimizerAttribute, value)
     s = Symbol(param.name)
     if hasfield(Lib.pdhg_parameters_t, s)
