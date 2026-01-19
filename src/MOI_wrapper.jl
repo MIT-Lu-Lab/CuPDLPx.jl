@@ -57,7 +57,42 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 end
 
 function MOI.default_cache(::Optimizer, ::Type)
-    return OptimizerCache()
+    return MOI.Utilities.UniversalFallback(OptimizerCache())
+end
+
+# ====================
+#   Copy
+# ====================
+
+function MOI.copy_to(
+    dest::Optimizer,
+    src::MOI.Utilities.UniversalFallback{OptimizerCache},
+)
+    index_map = MOI.copy_to(dest, src.model)
+    MOI.Utilities.pass_attributes(
+        dest,
+        src,
+        index_map,
+        MOI.get(src, MOI.ListOfVariableIndices()),
+    )
+    # The `ObjectiveSense` and `ObjectiveFunction` have already been handled.
+    MOI.Utilities.pass_attributes(
+        dest,
+        MOI.Utilities.ModelFilter(src) do attr
+            return !(attr isa MOI.ObjectiveSense) &&
+                !(attr isa MOI.ObjectiveFunction)
+        end,
+        index_map,
+    )
+    for (F, S) in MOI.get(src, MOI.ListOfConstraintTypesPresent())
+        MOI.Utilities.pass_attributes(
+            dest,
+            src,
+            index_map,
+            MOI.get(src, MOI.ListOfConstraintIndices{F,S}()),
+        )
+    end
+    return index_map
 end
 
 # ====================
@@ -84,35 +119,6 @@ function MOI.supports(::Optimizer, param::MOI.RawOptimizerAttribute)
     s = Symbol(param.name)
     return hasfield(Lib.pdhg_parameters_t, s) || 
            hasfield(Lib.termination_criteria_t, s)
-end
-
-function MOI.supports(::OptimizerCache, param::MOI.RawOptimizerAttribute)
-    s = Symbol(param.name)
-    return hasfield(Lib.pdhg_parameters_t, s) || 
-           hasfield(Lib.termination_criteria_t, s)
-end
-
-function _raw_attr_storage(model::OptimizerCache)
-    return get!(model.ext, :raw_optimizer_attributes) do
-        Dict{Symbol,Any}()
-    end
-end
-
-function MOI.set(model::OptimizerCache, param::MOI.RawOptimizerAttribute, value)
-    if !MOI.supports(model, param)
-        throw(MOI.UnsupportedAttribute(param))
-    end
-    _raw_attr_storage(model)[Symbol(param.name)] = value
-    return
-end
-
-function MOI.get(model::OptimizerCache, param::MOI.RawOptimizerAttribute)
-    store = _raw_attr_storage(model)
-    s = Symbol(param.name)
-    if haskey(store, s)
-        return store[s]
-    end
-    throw(MOI.UnsupportedAttribute(param))
 end
 
 function MOI.set(optimizer::Optimizer, param::MOI.RawOptimizerAttribute, value)
@@ -302,9 +308,9 @@ function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
 end
 
 function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
-    cache = OptimizerCache()
+    cache = MOI.default_cache(dest, Float64)
     index_map = MOI.copy_to(cache, src)
-    MOI.optimize!(dest, cache)
+    MOI.optimize!(dest, cache.model)
     return index_map, false
 end
 
