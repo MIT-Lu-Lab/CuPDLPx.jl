@@ -16,14 +16,17 @@ const OptimizerCache = MOI.Utilities.GenericModel{
     MOI.Utilities.VariablesContainer{Cdouble},
     MOI.Utilities.MatrixOfConstraints{
         Cdouble,
-        MOI.Utilities.MutableSparseMatrixCSC{Cdouble,Cint,MOI.Utilities.ZeroBasedIndexing},
+        MOI.Utilities.MutableSparseMatrixCSC{
+            Cdouble,
+            Cint,
+            MOI.Utilities.ZeroBasedIndexing,
+        },
         MOI.Utilities.Hyperrectangle{Cdouble},
         _LPProductOfSets{Cdouble},
     },
 }
 
 Base.show(io::IO, ::Type{OptimizerCache}) = print(io, "cuPDLPx.OptimizerCache")
-
 
 const BOUND_SETS = Union{
     MOI.GreaterThan{Float64},
@@ -32,11 +35,6 @@ const BOUND_SETS = Union{
     MOI.Interval{Float64},
 }
 
-"""
-    Optimizer()
-
-Create a new cuPDLPx optimizer.
-"""
 mutable struct Optimizer <: MOI.AbstractOptimizer
     result::Union{Nothing,Lib.cupdlpx_result_t}
     native_result_ptr::Ptr{Lib.cupdlpx_result_t}
@@ -46,13 +44,42 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     max_sense::Bool
     silent::Bool
 
+    c::Vector{Cdouble}
+    obj_const::Vector{Cdouble}
+    row_lower::Vector{Cdouble}
+    row_upper::Vector{Cdouble}
+    var_lower::Vector{Cdouble}
+    var_upper::Vector{Cdouble}
+
+    A_colptr::Vector{Cint}
+    A_rowval::Vector{Cint}
+    A_nzval::Vector{Cdouble}
+    matrix_desc_ref::Ref{Lib.matrix_desc_t}
+
     function Optimizer()
         params_ref = Ref{Lib.pdhg_parameters_t}()
-        Lib.set_default_parameters(
-            Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref),
+        Lib.set_default_parameters(Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref))
+        desc_val = Lib.matrix_desc_t(ntuple(_ -> 0x00, sizeof(Lib.matrix_desc_t)))
+        desc_ref = Ref{Lib.matrix_desc_t}(desc_val)
+        return new(
+            nothing,
+            C_NULL,
+            C_NULL,
+            params_ref[],
+            nothing,
+            false,
+            false,
+            Cdouble[],
+            Cdouble[],
+            Cdouble[],
+            Cdouble[],
+            Cdouble[],
+            Cdouble[],
+            Cint[],
+            Cint[],
+            Cdouble[],
+            desc_ref,
         )
-
-        return new(nothing, C_NULL, C_NULL, params_ref[], nothing, false, false)
     end
 end
 
@@ -61,38 +88,35 @@ function MOI.default_cache(::Optimizer, ::Type)
 end
 
 # ====================
-#   Copy
+#   Empty
 # ====================
 
-function MOI.optimize!(
-    dest::Optimizer,
-    src::MOI.Utilities.UniversalFallback{OptimizerCache},
-)
-    index_map = MOI.copy_to(dest, src.model)
-    MOI.Utilities.pass_attributes(
-        dest,
-        src,
-        index_map,
-        MOI.get(src, MOI.ListOfVariableIndices()),
-    )
-    # The `ObjectiveSense` and `ObjectiveFunction` have already been handled.
-    MOI.Utilities.pass_attributes(
-        dest,
-        MOI.Utilities.ModelFilter(src) do attr
-            return !(attr isa MOI.ObjectiveSense) &&
-                !(attr isa MOI.ObjectiveFunction)
-        end,
-        index_map,
-    )
-    for (F, S) in MOI.get(src, MOI.ListOfConstraintTypesPresent())
-        MOI.Utilities.pass_attributes(
-            dest,
-            src,
-            index_map,
-            MOI.get(src, MOI.ListOfConstraintIndices{F,S}()),
-        )
+function MOI.is_empty(optimizer::Optimizer)
+    return isnothing(optimizer.result) && optimizer.native_problem_ptr == C_NULL
+end
+
+function MOI.empty!(optimizer::Optimizer)
+    if optimizer.native_result_ptr != C_NULL
+        Lib.cupdlpx_result_free(optimizer.native_result_ptr)
+        optimizer.native_result_ptr = C_NULL
     end
-    return index_map
+    if optimizer.native_problem_ptr != C_NULL
+        Lib.lp_problem_free(optimizer.native_problem_ptr)
+        optimizer.native_problem_ptr = C_NULL
+    end
+    optimizer.result = nothing
+    optimizer.sets = nothing
+    optimizer.max_sense = false
+    empty!(optimizer.c)
+    empty!(optimizer.obj_const)
+    empty!(optimizer.row_lower)
+    empty!(optimizer.row_upper)
+    empty!(optimizer.var_lower)
+    empty!(optimizer.var_upper)
+    empty!(optimizer.A_colptr)
+    empty!(optimizer.A_rowval)
+    empty!(optimizer.A_nzval)
+    return
 end
 
 # ====================
@@ -147,11 +171,11 @@ function MOI.get(optimizer::Optimizer, param::MOI.RawOptimizerAttribute)
 end
 
 MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
+
 function MOI.set(optimizer::Optimizer, ::MOI.TimeLimitSec, value::Real)
     current_criteria = optimizer.parameters.termination_criteria
     new_criteria = _update_immutable(current_criteria, :time_sec_limit, Float64(value))
-    optimizer.parameters =
-        _update_immutable(optimizer.parameters, :termination_criteria, new_criteria)
+    optimizer.parameters = _update_immutable(optimizer.parameters, :termination_criteria, new_criteria)
     return
 end
 
@@ -160,38 +184,13 @@ function MOI.get(optimizer::Optimizer, ::MOI.TimeLimitSec)
 end
 
 MOI.supports(::Optimizer, ::MOI.Silent) = true
+
 function MOI.set(optimizer::Optimizer, ::MOI.Silent, value::Bool)
     optimizer.silent = value
     return
 end
+
 MOI.get(optimizer::Optimizer, ::MOI.Silent) = optimizer.silent
-
-# ====================
-#   Empty & Status
-# ====================
-
-function MOI.is_empty(optimizer::Optimizer)
-    return isnothing(optimizer.result)
-end
-
-function MOI.empty!(optimizer::Optimizer)
-    if optimizer.native_result_ptr != C_NULL
-        Lib.cupdlpx_result_free(optimizer.native_result_ptr)
-        optimizer.native_result_ptr = C_NULL
-    end
-    if optimizer.native_problem_ptr != C_NULL
-        Lib.lp_problem_free(optimizer.native_problem_ptr)
-        optimizer.native_problem_ptr = C_NULL
-    end
-    optimizer.result = nothing
-    optimizer.sets = nothing
-    optimizer.max_sense = false
-    return
-end
-
-# ========================================
-#   Constraints & Objectives
-# ========================================
 
 function MOI.supports_constraint(
     ::Optimizer,
@@ -218,93 +217,149 @@ function MOI.supports(
     return true
 end
 
-# ===============================
-#   Optimize
-# ===============================
+# ====================
+#   Copy
+# ====================
 
 function _flip_sense(optimizer::Optimizer, obj)
     return optimizer.max_sense ? -obj : obj
 end
 
-function create_matrix_desc_ref(
-    A::MOI.Utilities.MutableSparseMatrixCSC{Cdouble,Cint,MOI.Utilities.ZeroBasedIndexing},
-)
-    colptr_ptr = isempty(A.colptr) ? C_NULL : pointer(A.colptr)
-    rowval_ptr = isempty(A.rowval) ? C_NULL : pointer(A.rowval)
-    nzval_ptr  = isempty(A.nzval)  ? C_NULL : pointer(A.nzval)
+function _fill_matrix_desc!(dest::Optimizer, m::Integer, n::Integer)
     A_csc = Lib.MatrixCSC(
-        length(A.rowval),
-        colptr_ptr,
-        rowval_ptr,
-        nzval_ptr,
+        length(dest.A_rowval),
+        isempty(dest.A_colptr) ? C_NULL : pointer(dest.A_colptr),
+        isempty(dest.A_rowval) ? C_NULL : pointer(dest.A_rowval),
+        isempty(dest.A_nzval)  ? C_NULL : pointer(dest.A_nzval),
     )
-
-    desc_ref = Ref{Lib.matrix_desc_t}()
-
-    desc_val = Lib.matrix_desc_t(ntuple(_ -> 0x00, sizeof(Lib.matrix_desc_t)))
-    desc_ref[] = desc_val
-
-    desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, desc_ref)
-
-    desc_ptr.m = Cint(A.m)
-    desc_ptr.n = Cint(A.n)
+    desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, dest.matrix_desc_ref)
+    desc_ptr.m = Cint(m)
+    desc_ptr.n = Cint(n)
     desc_ptr.fmt = Lib.matrix_csc
     desc_ptr.zero_tolerance = 1e-12
     desc_ptr.data.csc = A_csc
-
-    return desc_ref
+    return
 end
 
-function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
+function MOI.copy_to(dest::Optimizer, src::OptimizerCache)
     MOI.empty!(dest)
+
     dest.max_sense = MOI.get(src, MOI.ObjectiveSense()) == MOI.MAX_SENSE
-    if src.constraints.coefficients.n == 0
-        dest.result = nothing
-        return MOI.Utilities.identity_index_map(src), false
-    end
-
-    obj = MOI.get(src, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
-
-    c = zeros(Cdouble, src.constraints.coefficients.n)
-    for term in obj.terms
-        c[term.variable.value] += _flip_sense(dest, term.coefficient)
-    end
-    obj_const = [_flip_sense(dest, MOI.constant(obj))]
-
     dest.sets = src.constraints.sets
 
-    matrix_desc_ref = create_matrix_desc_ref(src.constraints.coefficients)
-    matrix_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, matrix_desc_ref)
+    Ab = src.constraints
+    A = Ab.coefficients
+
+    dest.A_colptr = Vector{Cint}(A.colptr)
+    dest.A_rowval = Vector{Cint}(A.rowval)
+    dest.A_nzval  = Vector{Cdouble}(A.nzval)
+    _fill_matrix_desc!(dest, A.m, A.n)
+
+    dest.row_lower = Vector{Cdouble}(Ab.constants.lower)
+    dest.row_upper = Vector{Cdouble}(Ab.constants.upper)
+    dest.var_lower = Vector{Cdouble}(src.variables.lower)
+    dest.var_upper = Vector{Cdouble}(src.variables.upper)
+
+    obj = MOI.get(src, MOI.ObjectiveFunction{MOI.ScalarAffineFunction{Float64}}())
+    dest.c = zeros(Cdouble, A.n)
+    for term in obj.terms
+        dest.c[term.variable.value] += _flip_sense(dest, term.coefficient)
+    end
+    dest.obj_const = Cdouble[_flip_sense(dest, MOI.constant(obj))]
+
+    matrix_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, dest.matrix_desc_ref)
+
+    GC.@preserve dest begin
+        prob = Lib.create_lp_problem(
+            pointer(dest.c),
+            matrix_desc_ptr,
+            pointer(dest.row_lower),
+            pointer(dest.row_upper),
+            pointer(dest.var_lower),
+            pointer(dest.var_upper),
+            pointer(dest.obj_const),
+        )
+        @assert prob != C_NULL
+        dest.native_problem_ptr = prob
+    end
+
+    dest.result = nothing
+    dest.native_result_ptr = C_NULL
+
+    return MOI.Utilities.identity_index_map(src)
+end
+
+function MOI.copy_to(
+    dest::Optimizer,
+    src::MOI.Utilities.UniversalFallback{OptimizerCache},
+)
+    index_map = MOI.copy_to(dest, src.model)
+
+    MOI.Utilities.pass_attributes(
+        dest,
+        src,
+        index_map,
+        MOI.get(src, MOI.ListOfVariableIndices()),
+    )
+
+    MOI.Utilities.pass_attributes(
+        dest,
+        MOI.Utilities.ModelFilter(src) do attr
+            return !(attr isa MOI.ObjectiveSense) &&
+                   !(attr isa MOI.ObjectiveFunction)
+        end,
+        index_map,
+    )
+
+    for (F, S) in MOI.get(src, MOI.ListOfConstraintTypesPresent())
+        MOI.Utilities.pass_attributes(
+            dest,
+            src,
+            index_map,
+            MOI.get(src, MOI.ListOfConstraintIndices{F,S}()),
+        )
+    end
+
+    return index_map
+end
+
+# ====================
+#   Optimize
+# ====================
+
+function MOI.optimize!(dest::Optimizer)
+    @assert dest.native_problem_ptr != C_NULL
 
     solve_params = dest.parameters
     if dest.silent
         solve_params = _update_immutable(solve_params, :verbose, false)
     end
-
     params_ref = Ref(solve_params)
     params_ptr = Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref)
 
-    GC.@preserve params_ref c obj_const src begin
-        prob = Lib.create_lp_problem(
-            pointer(c),
-            matrix_desc_ptr,
-            pointer(src.constraints.constants.lower),
-            pointer(src.constraints.constants.upper),
-            pointer(src.variables.lower),
-            pointer(src.variables.upper),
-            pointer(obj_const),
-        )
-        @assert prob != C_NULL
-        dest.native_problem_ptr = prob
-
-        result_ptr = Lib.solve_lp_problem(prob, params_ptr)
+    GC.@preserve dest params_ref begin
+        result_ptr = Lib.solve_lp_problem(dest.native_problem_ptr, params_ptr)
         @assert result_ptr != C_NULL
-
         dest.result = unsafe_load(result_ptr)
-        dest.native_result_ptr = result_ptr 
+        dest.native_result_ptr = result_ptr
     end
 
-    return MOI.Utilities.identity_index_map(src), false
+    return
+end
+
+function MOI.optimize!(
+    dest::Optimizer,
+    src::MOI.Utilities.UniversalFallback{OptimizerCache},
+)
+    index_map = MOI.copy_to(dest, src)
+    MOI.optimize!(dest)
+    return index_map, false
+end
+
+function MOI.optimize!(dest::Optimizer, src::OptimizerCache)
+    index_map = MOI.copy_to(dest, src)
+    MOI.optimize!(dest)
+    return index_map, false
 end
 
 function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
@@ -319,7 +374,7 @@ end
 # ====================
 
 function MOI.get(optimizer::Optimizer, ::MOI.SolveTimeSec)
-    return optimizer.result.cumulative_time_sec
+    return isnothing(optimizer.result) ? 0.0 : optimizer.result.cumulative_time_sec
 end
 
 function MOI.get(optimizer::Optimizer, ::MOI.RawStatusString)
@@ -364,14 +419,14 @@ const _PRIMAL_STATUS_MAP = Dict(
 )
 
 const _DUAL_STATUS_MAP = Dict(
-    LibcuPDLPx.TERMINATION_REASON_UNSPECIFIED => MOI.NO_SOLUTION,
-    LibcuPDLPx.TERMINATION_REASON_OPTIMAL => MOI.FEASIBLE_POINT,
-    LibcuPDLPx.TERMINATION_REASON_PRIMAL_INFEASIBLE => MOI.INFEASIBILITY_CERTIFICATE,
-    LibcuPDLPx.TERMINATION_REASON_DUAL_INFEASIBLE => MOI.NO_SOLUTION,
+    Lib.TERMINATION_REASON_UNSPECIFIED => MOI.NO_SOLUTION,
+    Lib.TERMINATION_REASON_OPTIMAL => MOI.FEASIBLE_POINT,
+    Lib.TERMINATION_REASON_PRIMAL_INFEASIBLE => MOI.INFEASIBILITY_CERTIFICATE,
+    Lib.TERMINATION_REASON_DUAL_INFEASIBLE => MOI.NO_SOLUTION,
     Lib.TERMINATION_REASON_INFEASIBLE_OR_UNBOUNDED => MOI.UNKNOWN_RESULT_STATUS,
-    LibcuPDLPx.TERMINATION_REASON_TIME_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
-    LibcuPDLPx.TERMINATION_REASON_ITERATION_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
-    LibcuPDLPx.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.FEASIBLE_POINT,
+    Lib.TERMINATION_REASON_TIME_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
+    Lib.TERMINATION_REASON_ITERATION_LIMIT => MOI.UNKNOWN_RESULT_STATUS,
+    Lib.TERMINATION_REASON_FEAS_POLISH_SUCCESS => MOI.FEASIBLE_POINT,
 )
 
 function MOI.get(optimizer::Optimizer, attr::MOI.PrimalStatus)
