@@ -310,7 +310,7 @@ end
 function MOI.optimize!(dest::Optimizer, src::MOI.ModelLike)
     cache = MOI.default_cache(dest, Float64)
     index_map = MOI.copy_to(cache, src)
-    MOI.optimize!(dest, cache.model)
+    MOI.optimize!(dest, cache)
     return index_map, false
 end
 
