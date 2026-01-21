@@ -64,7 +64,7 @@ end
 #   Copy
 # ====================
 
-function MOI.copy_to(
+function MOI.optimize!(
     dest::Optimizer,
     src::MOI.Utilities.UniversalFallback{OptimizerCache},
 )
