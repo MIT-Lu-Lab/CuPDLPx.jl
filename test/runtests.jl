@@ -1,9 +1,9 @@
 using Test
-using cuPDLPx
+using CuPDLPx
 
-const Lib = cuPDLPx.LibcuPDLPx
+const Lib = CuPDLPx.LibCuPDLPx
 
-@testset "LibcuPDLPx Translation Tests" begin
+@testset "LibCuPDLPx Translation Tests" begin
 
     # ==========================================
     # 1. Basic Enum Mapping Tests

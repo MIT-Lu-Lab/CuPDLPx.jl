@@ -1,6 +1,6 @@
 import MathOptInterface as MOI
 
-const Lib = cuPDLPx.LibcuPDLPx
+const Lib = CuPDLPx.LibCuPDLPx
 
 MOI.Utilities.@product_of_sets(
     _LPProductOfSets,
@@ -26,7 +26,7 @@ const OptimizerCache = MOI.Utilities.GenericModel{
     },
 }
 
-Base.show(io::IO, ::Type{OptimizerCache}) = print(io, "cuPDLPx.OptimizerCache")
+Base.show(io::IO, ::Type{OptimizerCache}) = print(io, "CuPDLPx.OptimizerCache")
 
 const BOUND_SETS = Union{
     MOI.GreaterThan{Float64},
@@ -137,7 +137,7 @@ end
 #   Parameters
 # ====================
 
-MOI.get(::Optimizer, ::MOI.SolverName) = "cuPDLPx"
+MOI.get(::Optimizer, ::MOI.SolverName) = "CuPDLPx"
 
 function MOI.supports(::Optimizer, param::MOI.RawOptimizerAttribute)
     s = Symbol(param.name)

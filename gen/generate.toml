@@ -1,7 +1,7 @@
 [general]
 library_name = "libcupdlpx"
-output_file_path = "./src/LibcuPDLPx.jl"
-module_name = "LibcuPDLPx"
+output_file_path = "./src/LibCuPDLPx.jl"
+module_name = "LibCuPDLPx"
 jll_pkg_name = "cuPDLPx_jll"
 use_julia_native_enum_type = true
 extract_c_comment_style = "doxygen"

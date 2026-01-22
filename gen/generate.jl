@@ -19,9 +19,9 @@ ctx = create_context(headers, args, options)
 
 ctx.options["is_function_allowed"] = (cursor, spelling) -> startswith(spelling, "cupdlpx_")
 
-output_file = joinpath(@__DIR__, "src", "LibcuPDLPx.jl")
+output_file = joinpath(@__DIR__, "src", "LibCuPDLPx.jl")
 mkpath(dirname(output_file))
 
 build!(ctx)
 
-println("✅ Successfully generated LibcuPDLPx.jl at $(output_file)")
+println("✅ Successfully generated LibCuPDLPx.jl at $(output_file)")

@@ -1,35 +1,35 @@
-# cuPDLPx.jl
-Julia interface for cuPDLPx.
+# CuPDLPx.jl
+Julia interface for [cuPDLPx](https://github.com/MIT-Lu-Lab/cuPDLPx).
 
 ## Installation
-cuPDLPx.jl is available from the Julia General registry:
+CuPDLPx.jl is available from the Julia General registry:
 
 ```julia
-pkg> add cuPDLPx
+pkg> add CuPDLPx
 ```
 
 ## Use with JuMP
 
-To use cuPDLPx with JuMP, use `cuPDLPx.Optimizer`:
+To use CuPDLPx with JuMP, use `CuPDLPx.Optimizer`:
 
 ```julia
-using JuMP, cuPDLPx
-model = Model(cuPDLPx.Optimizer)
+using JuMP, CuPDLPx
+model = Model(CuPDLPx.Optimizer)
 ```
 
 ## Setting solver parameters
 
-cuPDLPx.jl supports setting solver parameters via `set_optimizer_attribute`.
+CuPDLPx.jl supports setting solver parameters via `set_optimizer_attribute`.
 
 ```Julia
 using JuMP
-using cuPDLPx
+using CuPDLPx
 
 model = read_from_file("2club200v15p5scn.mps.gz")
 undo = relax_integrality(model)
 
 println("Read MPS succeed.")
-set_optimizer(model, cuPDLPx.Optimizer)
+set_optimizer(model, CuPDLPx.Optimizer)
 
 set_optimizer_attribute(model, "verbose", true)
 set_optimizer_attribute(model, "l_inf_ruiz_iterations", 0)
