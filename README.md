@@ -1,6 +1,13 @@
 # cuPDLPx.jl
 Julia interface for cuPDLPx.
 
+## Installation
+cuPDLPx.jl is available from the Julia General registry:
+
+```julia
+pkg> add cuPDLPx
+```
+
 ## Use with JuMP
 
 To use cuPDLPx with JuMP, use `cuPDLPx.Optimizer`:
