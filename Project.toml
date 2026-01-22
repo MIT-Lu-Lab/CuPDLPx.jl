@@ -11,9 +11,9 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 cuPDLPx_jll = "bca5daad-f4d3-5101-ae12-8b63679c982c"
 
 [compat]
+julia = "1.10"
 CUDA_Runtime_jll = "0.19.2"
 CUDA_SDK_jll = "13.0.2"
 Clang = "0.19.0"
 MathOptInterface = "1.46.0"
-Test = "1.11.0"
 cuPDLPx_jll = "0.2.3"
