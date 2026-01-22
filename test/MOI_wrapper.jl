@@ -2,10 +2,10 @@ module TestMOI
 
 using Test
 import MathOptInterface as MOI
-import cuPDLPx
+import CuPDLPx
 
 function test_runtests()
-    optimizer = cuPDLPx.Optimizer()
+    optimizer = CuPDLPx.Optimizer()
     MOI.set(optimizer, MOI.Silent(), true) # comment this to enable output
     model = MOI.Bridges.full_bridge_optimizer(
         MOI.Utilities.CachingOptimizer(

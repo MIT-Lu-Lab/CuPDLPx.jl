@@ -1,4 +1,4 @@
-module LibcuPDLPx
+module LibCuPDLPx
 
 using cuPDLPx_jll
 export cuPDLPx_jll
