@@ -1,6 +1,13 @@
 # cuPDLPx.jl
 Julia interface for cuPDLPx.
 
+## Installation
+cuPDLPx.jl is available from the Julia General registry:
+
+```julia
+pkg> add cuPDLPx
+```
+
 ## Use with JuMP
 
 To use cuPDLPx with JuMP, use `cuPDLPx.Optimizer`:
@@ -37,34 +44,34 @@ All of the following attributes are supported.
 
 ### PDHG parameters
 
-| name | type |
-|---|---|
-| `l_inf_ruiz_iterations` | `Int` |
-| `has_pock_chambolle_alpha` | `Bool` |
-| `pock_chambolle_alpha` | `Float64` |
-| `bound_objective_rescaling` | `Bool` |
-| `verbose` | `Bool` |
-| `termination_evaluation_frequency` | `Int` |
-| `sv_max_iter` | `Int` |
-| `sv_tol` | `Float64` |
-| `reflection_coefficient` | `Float64` |
-| `feasibility_polishing` | `Bool` |
-| `presolve` | `Bool` |
-| `artificial_restart_threshold` | `Float64` |
-| `sufficient_reduction_for_restart` | `Float64` |
-| `necessary_reduction_for_restart` | `Float64` |
-| `k_p` | `Float64` |
-| `k_i` | `Float64` |
-| `k_d` | `Float64` |
-| `i_smooth` | `Float64` |
+| name | type | default |
+|---|---|---|
+| `l_inf_ruiz_iterations` | `Int` | `10` |
+| `has_pock_chambolle_alpha` | `Bool` | `true` |
+| `pock_chambolle_alpha` | `Float64` | `1.0` |
+| `bound_objective_rescaling` | `Bool` | `true` |
+| `verbose` | `Bool` | `false` |
+| `termination_evaluation_frequency` | `Int` | `200` |
+| `sv_max_iter` | `Int` | `5000` |
+| `sv_tol` | `Float64` | `1e-4` |
+| `reflection_coefficient` | `Float64` | `1.0` |
+| `feasibility_polishing` | `Bool` | `false` |
+| `presolve` | `Bool` | `true` |
+| `artificial_restart_threshold` | `Float64` | `0.36` |
+| `sufficient_reduction_for_restart` | `Float64` | `0.2` |
+| `necessary_reduction_for_restart` | `Float64` | `0.5` |
+| `k_p` | `Float64` | `0.99` |
+| `k_i` | `Float64` | `0.01` |
+| `k_d` | `Float64` | `0.0` |
+| `i_smooth` | `Float64` | `0.3` |
 
 ### Termination criteria
 
-| name | type |
-|---|---|
-| `eps_optimal_relative` | `Float64` |
-| `eps_feasible_relative` | `Float64` |
-| `eps_feas_polish_relative` | `Float64` |
-| `eps_infeasible` | `Float64` |
-| `time_sec_limit` | `Float64` |
-| `iteration_limit` | `Int` |
+| name | type | default |
+|---|---|---|
+| `eps_optimal_relative` | `Float64` | `1e-4` |
+| `eps_feasible_relative` | `Float64` | `1e-4` |
+| `eps_feas_polish_relative` | `Float64` | `1e-6` |
+| `eps_infeasible` | `Float64` | `1e-10` |
+| `time_sec_limit` | `Float64` | `3600.0` |
+| `iteration_limit` | `Int` | `INT32_MAX` |
