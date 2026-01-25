@@ -1,4 +1,6 @@
 # CuPDLPx.jl
+[![version](https://juliahub.com/docs/General/CuPDLPx/stable/version.svg)](https://juliahub.com/ui/Packages/General/CuPDLPx)
+
 Julia interface for [cuPDLPx](https://github.com/MIT-Lu-Lab/cuPDLPx).
 
 ## Installation
