@@ -1,0 +1,13 @@
+name: TagBot
+on:
+  issue_comment:
+    types:
+      - created
+jobs:
+  TagBot:
+    if: github.actor == 'JuliaTagBot'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: JuliaRegistries/TagBot@v1.24.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
