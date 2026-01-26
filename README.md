@@ -58,6 +58,8 @@ All of the following attributes are supported.
 
 ### 2. Algorithm and Preconditioning
 
+| Name | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
 | `presolve` | `Bool` | `true` | Whether to enable the PSLP presolver. |
 | `l_inf_ruiz_iterations` | `Int` | `10` | Number of Ruiz rescaling iterations. |
 | `has_pock_chambolle_alpha` | `Bool` | `true` | Whether to use Pock-Chambolle rescaling. |
