@@ -1,6 +1,6 @@
 name = "CuPDLPx"
 uuid = "bcd6524d-1420-4b17-a582-359cb8a71a63"
-version = "0.2.3"
+version = "0.2.5"
 
 [deps]
 CUDA_Runtime_jll = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
