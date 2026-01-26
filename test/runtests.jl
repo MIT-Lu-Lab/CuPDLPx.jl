@@ -169,6 +169,7 @@ const Lib = CuPDLPx.LibCuPDLPx
             params_val.restart_params,
             params_val.reflection_coefficient,
             params_val.feasibility_polishing,
+            params_val.optimality_norm,
             params_val.presolve,
         )
         params_ref[] = params_val

@@ -14,6 +14,11 @@ export cuPDLPx_jll
     TERMINATION_REASON_FEAS_POLISH_SUCCESS = 7
 end
 
+@enum norm_type_t::UInt32 begin
+    NORM_TYPE_L2 = 0
+    NORM_TYPE_L_INF = 1
+end
+
 struct lp_problem_t
     num_variables::Cint
     num_constraints::Cint
@@ -45,7 +50,6 @@ struct termination_criteria_t
     eps_optimal_relative::Cdouble
     eps_feasible_relative::Cdouble
     eps_feas_polish_relative::Cdouble
-    eps_infeasible::Cdouble
     time_sec_limit::Cdouble
     iteration_limit::Cint
 end
@@ -63,6 +67,7 @@ struct pdhg_parameters_t
     restart_params::restart_parameters_t
     reflection_coefficient::Cdouble
     feasibility_polishing::Bool
+    optimality_norm::norm_type_t
     presolve::Bool
 end
 
