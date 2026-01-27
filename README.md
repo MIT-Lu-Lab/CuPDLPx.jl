@@ -18,10 +18,10 @@ If you have a reproducible example of a bug, please [open a GitHub issue](https:
 
 ## License
 
-`CuPDLPx.jl` is licensed under the [Apache 2.0](https://github.com/MIT-Lu-Lab/CuPDLPx.jl/blob/main/LICENSE).
+`CuPDLPx.jl` is licensed under the [Apache 2.0 license](https://github.com/MIT-Lu-Lab/CuPDLPx.jl/blob/main/LICENSE).
 
 The underlying solver, [MIT-Lu-Lab/cuPDLPx](https://github.com/MIT-Lu-Lab/cuPDLPx), is
-licensed under the [MIT license](https://github.com/MIT-Lu-Lab/cuPDLPx/blob/main/LICENSE).
+licensed under the [Apache 2.0 license](https://github.com/MIT-Lu-Lab/cuPDLPx/blob/main/LICENSE).
 
 ## Installation
 
