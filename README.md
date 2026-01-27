@@ -1,14 +1,38 @@
 # CuPDLPx.jl
+
 [![version](https://juliahub.com/docs/General/CuPDLPx/stable/version.svg)](https://juliahub.com/ui/Packages/General/CuPDLPx)
 
-Julia interface for [cuPDLPx](https://github.com/MIT-Lu-Lab/cuPDLPx).
+[CuPDLPx.jl](https://github.com/MIT-Lu-Lab/CuPDLPx.jl) is a wrapper for the
+[cuPDLPx](https://github.com/MIT-Lu-Lab/cuPDLPx) solver.
+
+It has two components:
+
+ - a thin wrapper around the complete C API
+ - an interface to [MathOptInterface](https://github.com/jump-dev/MathOptInterface.jl)
+
+## Getting help
+
+If you need help, please ask a question on the [JuMP community forum](https://jump.dev/forum).
+
+If you have a reproducible example of a bug, please [open a GitHub issue](https://github.com/MIT-Lu-Lab/CuPDLPx.jl/issues/new).
+
+## License
+
+`CuPDLPx.jl` is licensed under the [Apache 2.0](https://github.com/MIT-Lu-Lab/CuPDLPx.jl/blob/main/LICENSE).
+
+The underlying solver, [MIT-Lu-Lab/cuPDLPx](https://github.com/MIT-Lu-Lab/cuPDLPx), is
+licensed under the [MIT license](https://github.com/MIT-Lu-Lab/cuPDLPx/blob/main/LICENSE).
 
 ## Installation
-CuPDLPx.jl is available from the Julia General registry:
 
+Install CuPDLPx as follows:
 ```julia
-pkg> add CuPDLPx
+import Pkg
+Pkg.add("CuPDLPx")
 ```
+
+In addition to installing the CuPDLPx.jl package, this will also download and
+install the cuPDLPx binaries. You do not need to install cuPDLPx separately.
 
 ## Use with JuMP
 
@@ -17,29 +41,11 @@ To use CuPDLPx with JuMP, use `CuPDLPx.Optimizer`:
 ```julia
 using JuMP, CuPDLPx
 model = Model(CuPDLPx.Optimizer)
+set_attribute(model, "verbose", true)
+set_attribute(model, "l_inf_ruiz_iterations", 0)
+set_attribute(model, "iteration_limit", 200)
 ```
 
-## Setting solver parameters
-
-CuPDLPx.jl supports setting solver parameters via `set_optimizer_attribute`.
-
-```Julia
-using JuMP
-using CuPDLPx
-
-model = read_from_file("2club200v15p5scn.mps.gz")
-undo = relax_integrality(model)
-
-println("Read MPS succeed.")
-set_optimizer(model, CuPDLPx.Optimizer)
-
-set_optimizer_attribute(model, "verbose", true)
-set_optimizer_attribute(model, "l_inf_ruiz_iterations", 0)
-set_optimizer_attribute(model, "iteration_limit", 200)
-
-optimize!(model)
-println(solution_summary(model))
-```
 ## Supported parameters
 
 All of the following attributes are supported.
@@ -66,7 +72,7 @@ All of the following attributes are supported.
 | `pock_chambolle_alpha` | `Float64` | `1.0` | $\alpha$ used in Pock-Chambolle rescaling. |
 | `bound_objective_rescaling` | `Bool` | `true` | Whether to use objective and bound rescaling. |
 | `reflection_coefficient` | `Float64` | `1.0` | Reflection coefficient (typically in $[0, 1]$). |
-| `feasibility_polishing` | `Bool` | `false` | Wheather to perform post-solve feasibility polishing. |
+| `feasibility_polishing` | `Bool` | `false` | Whether to perform post-solve feasibility polishing. |
 | `sv_max_iter` | `Int` | `5000` | Maximum iterations for singular value estimation. |
 | `sv_tol` | `Float64` | `1e-4` | Tolerance for singular value estimation. |
 | `verbose` | `Bool` | `false` | Whether to enable console output and progress logging. |
