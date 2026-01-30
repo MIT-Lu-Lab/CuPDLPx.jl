@@ -458,6 +458,39 @@ function MOI.get(
     return unsafe_load(optimizer.result.dual_solution, row)
 end
 
+function MOI.get(
+    optimizer::Optimizer,
+    attr::MOI.ConstraintDual,
+    ci::MOI.ConstraintIndex{MOI.VariableIndex,MOI.LessThan{Float64}},
+)
+    MOI.check_result_index_bounds(optimizer, attr)
+    rc = unsafe_load(optimizer.result.reduced_cost, ci.value)
+    return min(0.0, rc)
+end
+
+function MOI.get(
+    optimizer::Optimizer,
+    attr::MOI.ConstraintDual,
+    ci::MOI.ConstraintIndex{MOI.VariableIndex,MOI.GreaterThan{Float64}},
+)
+    MOI.check_result_index_bounds(optimizer, attr)
+    rc = unsafe_load(optimizer.result.reduced_cost, ci.value)
+    return max(0.0, rc)
+end
+
+function MOI.get(
+    optimizer::Optimizer,
+    attr::MOI.ConstraintDual,
+    ci::MOI.ConstraintIndex{
+        MOI.VariableIndex,
+        <:Union{MOI.Interval{Float64},MOI.EqualTo{Float64}},
+    },
+)
+    MOI.check_result_index_bounds(optimizer, attr)
+    rc = unsafe_load(optimizer.result.reduced_cost, ci.value)
+    return rc
+end
+
 function MOI.get(optimizer::Optimizer, ::MOI.ResultCount)
     return isnothing(optimizer.result) ? 0 : 1
 end
