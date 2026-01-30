@@ -30,7 +30,7 @@ function test_runtests()
         model,
         config,
         # failed tests
-        # some implementations not supported yet, such as reduced costs, TimeLimitSec, etc.
+        # some implementations not supported yet, such as TimeLimitSec, etc.
         exclude = [r"^test_infeasible_MAX_SENSE$",
                    r"^test_infeasible_MAX_SENSE_offset$",
                    r"^test_infeasible_MIN_SENSE$",
@@ -50,10 +50,6 @@ function test_runtests()
                    r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_LessThan$",
                    r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_VariableIndex_LessThan$",
                    r"^test_solve_DualStatus_INFEASIBILITY_CERTIFICATE_VariableIndex_LessThan_max$",
-                   r"^test_solve_VariableIndex_ConstraintDual_MAX_SENSE$",
-                   r"^test_solve_VariableIndex_ConstraintDual_MIN_SENSE$",
-                   r"^test_variable_solve_with_lowerbound$",
-                   r"^test_variable_solve_with_upperbound$",
                   ],
         verbose = true,
     )
