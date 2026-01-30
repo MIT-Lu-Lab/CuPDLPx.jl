@@ -458,6 +458,15 @@ function MOI.get(
     return unsafe_load(optimizer.result.dual_solution, row)
 end
 
+function MOI.get(
+    optimizer::Optimizer, 
+    attr::MOI.ConstraintDual, 
+    ci::MOI.ConstraintIndex{MOI.VariableIndex,S}, 
+) where {S<:MOI.AbstractSet}
+    MOI.check_result_index_bounds(optimizer, attr)
+    return unsafe_load(optimizer.result.reduced_cost, ci.value)
+end
+
 function MOI.get(optimizer::Optimizer, ::MOI.ResultCount)
     return isnothing(optimizer.result) ? 0 : 1
 end
