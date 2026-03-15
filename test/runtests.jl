@@ -49,7 +49,7 @@ const Lib = CuPDLPx.LibCuPDLPx
     # 4. Struct Size Check
     # ==========================================
     @testset "Struct Size Sanity Check" begin
-        @test sizeof(Lib.matrix_desc_t) == 56
+        @test sizeof(Lib.matrix_desc_t) == 48
     end
 
     # ==========================================
@@ -171,6 +171,7 @@ const Lib = CuPDLPx.LibCuPDLPx
             params_val.feasibility_polishing,
             params_val.optimality_norm,
             params_val.presolve,
+            params_val.matrix_zero_tol,
         )
         params_ref[] = params_val
         @test params_ref[].verbose == true
@@ -229,14 +230,13 @@ const Lib = CuPDLPx.LibCuPDLPx
         )
 
         # B. Construct matrix_desc_t        
-        A_desc_ref[] = Lib.matrix_desc_t(ntuple(_ -> UInt8(0), 56)) 
+        A_desc_ref[] = Lib.matrix_desc_t(ntuple(_ -> UInt8(0), 48)) 
         A_desc_ptr = Base.unsafe_convert(Ptr{Lib.matrix_desc_t}, A_desc_ref)
 
         A_desc_ptr.m = Cint(2)  # m_cons = 2
         A_desc_ptr.n = Cint(3)  # n_vars = 3
 
         A_desc_ptr.fmt = Lib.matrix_csr
-        A_desc_ptr.zero_tolerance = 1e-12
         A_desc_ptr.data.csr = A_csr
         # Create LP Problem
         prob = Lib.create_lp_problem(
