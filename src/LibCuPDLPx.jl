@@ -69,6 +69,7 @@ struct pdhg_parameters_t
     feasibility_polishing::Bool
     optimality_norm::norm_type_t
     presolve::Bool
+    matrix_zero_tol::Cdouble
 end
 
 struct cupdlpx_result_t
@@ -142,15 +143,14 @@ function Base.propertynames(x::MatrixData, private::Bool = false)
 end
 
 struct matrix_desc_t
-    data::NTuple{56, UInt8}
+    data::NTuple{48, UInt8}
 end
 
 function Base.getproperty(x::Ptr{matrix_desc_t}, f::Symbol)
     f === :m && return Ptr{Cint}(x + 0)
     f === :n && return Ptr{Cint}(x + 4)
     f === :fmt && return Ptr{matrix_format_t}(x + 8)
-    f === :zero_tolerance && return Ptr{Cdouble}(x + 16)
-    f === :data && return Ptr{MatrixData}(x + 24)
+    f === :data && return Ptr{MatrixData}(x + 16)
     return getfield(x, f)
 end
 
@@ -166,7 +166,7 @@ function Base.setproperty!(x::Ptr{matrix_desc_t}, f::Symbol, v)
 end
 
 function Base.propertynames(x::matrix_desc_t, private::Bool = false)
-    (:m, :n, :fmt, :zero_tolerance, :data, if private
+    (:m, :n, :fmt, :data, if private
             fieldnames(typeof(x))
         else
             ()

@@ -236,7 +236,6 @@ function _fill_matrix_desc!(dest::Optimizer, m::Integer, n::Integer)
     desc_ptr.m = Cint(m)
     desc_ptr.n = Cint(n)
     desc_ptr.fmt = Lib.matrix_csc
-    desc_ptr.zero_tolerance = 1e-12
     desc_ptr.data.csc = A_csc
     return
 end
