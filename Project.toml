@@ -1,25 +1,23 @@
 name = "CuPDLPx"
 uuid = "bcd6524d-1420-4b17-a582-359cb8a71a63"
-version = "0.2.7"
+version = "0.2.8"
 
 [deps]
-CUDA_Runtime_jll = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
-CUDA_SDK_jll = "6cbf2f2e-7e60-5632-ac76-dca2274e0be0"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 cuPDLPx_jll = "bca5daad-f4d3-5101-ae12-8b63679c982c"
 
 [compat]
-CUDA_Runtime_jll = "0.19.2"
 CUDA_SDK_jll = "13.0.2"
 Clang = "0.19.0"
 MathOptInterface = "1.46.0"
-cuPDLPx_jll = "0.2.7"
+cuPDLPx_jll = "0.2.8"
 julia = "1.10"
 
 [extras]
+CUDA_SDK_jll = "6cbf2f2e-7e60-5632-ac76-dca2274e0be0"
 Clang = "40e3b903-d033-50b4-a0cc-940c62c95e31"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-gen = ["Clang"]
+gen = ["Clang", "CUDA_SDK_jll"]
 test = ["Test"]
