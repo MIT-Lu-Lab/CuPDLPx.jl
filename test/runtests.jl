@@ -156,22 +156,10 @@ const Lib = CuPDLPx.LibCuPDLPx
         Lib.set_default_parameters(Base.unsafe_convert(Ptr{Lib.pdhg_parameters_t}, params_ref))
         # Set verbose explicitly to check propagation through the native API
         params_val = params_ref[]
+        # Rebuild field-by-field so this test does not depend on the exact
+        # field list of pdhg_parameters_t, which changes between jll versions.
         params_val = Lib.pdhg_parameters_t(
-            params_val.l_inf_ruiz_iterations,
-            params_val.has_pock_chambolle_alpha,
-            params_val.pock_chambolle_alpha,
-            params_val.bound_objective_rescaling,
-            true,  # verbose
-            params_val.termination_evaluation_frequency,
-            params_val.sv_max_iter,
-            params_val.sv_tol,
-            params_val.termination_criteria,
-            params_val.restart_params,
-            params_val.reflection_coefficient,
-            params_val.feasibility_polishing,
-            params_val.optimality_norm,
-            params_val.presolve,
-            params_val.matrix_zero_tol,
+            (f == :verbose ? true : getfield(params_val, f) for f in fieldnames(Lib.pdhg_parameters_t))...
         )
         params_ref[] = params_val
         @test params_ref[].verbose == true
