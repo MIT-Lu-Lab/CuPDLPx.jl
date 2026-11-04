@@ -56,6 +56,8 @@ struct termination_criteria_t
     eps_optimal_relative::Cdouble
     eps_feasible_relative::Cdouble
     eps_feas_polish_relative::Cdouble
+    eps_infeasible_relative::Cdouble
+    infeasible_ray_objective_margin::Cdouble
     time_sec_limit::Cdouble
     iteration_limit::Cint
 end
@@ -66,6 +68,7 @@ struct pdhg_parameters_t
     pock_chambolle_alpha::Cdouble
     bound_objective_rescaling::Bool
     verbose::Bool
+    debug::Bool
     termination_evaluation_frequency::Cint
     sv_max_iter::Cint
     sv_tol::Cdouble
@@ -75,7 +78,21 @@ struct pdhg_parameters_t
     feasibility_polishing::Bool
     optimality_norm::norm_type_t
     presolve::Bool
+    infeasibility_detection::Bool
     matrix_zero_tol::Cdouble
+    infinite_bound::Cdouble
+    geometric_mean_iterations::Cint
+    active_set_boost::Bool
+    asb_activation_tol::Cdouble
+    asb_window_iter::Cint
+    asb_safety_factor::Cdouble
+    asb_max_reverts::Cint
+    asb_min_raise_ratio::Cdouble
+    asb_reestimate_change_ratio::Cdouble
+    asb_constraint_tol::Cdouble
+    asb_variable_tol::Cdouble
+    asb_divergence_ceiling_ratio::Cdouble
+    asb_divergence_margin::Cdouble
 end
 
 struct cupdlpx_result_t
@@ -108,6 +125,9 @@ struct cupdlpx_result_t
     termination_reason::termination_reason_t
     feasibility_polishing_time::Cdouble
     feasibility_iteration::Cint
+    asb_raise_count::Cint
+    asb_revert_count::Cint
+    asb_pi_iterations::Cint
 end
 
 @enum matrix_format_t::UInt32 begin
@@ -193,6 +213,14 @@ end
 
 function set_default_parameters(params)
     ccall((:set_default_parameters, libcupdlpx), Cvoid, (Ptr{pdhg_parameters_t},), params)
+end
+
+function cupdlpx_gpu_init_async()
+    ccall((:cupdlpx_gpu_init_async, libcupdlpx), Cvoid, ())
+end
+
+function cupdlpx_validate_parameters(params, error_message, error_message_size)
+    ccall((:cupdlpx_validate_parameters, libcupdlpx), Cint, (Ptr{pdhg_parameters_t}, Ptr{Cchar}, Csize_t), params, error_message, error_message_size)
 end
 
 function cupdlpx_result_free(results)

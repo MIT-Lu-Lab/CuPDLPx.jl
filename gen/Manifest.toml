@@ -2,7 +2,7 @@
 
 julia_version = "1.12.5"
 manifest_format = "2.0"
-project_hash = "54ae9d6316491312536baefd2a50a99c7125f067"
+project_hash = "4c0aff1580fd93568fdfa75b1d7457fb23cfede1"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -21,23 +21,29 @@ git-tree-sha1 = "389ad5c84de1ae7cf0e28e381131c98ea87d54fc"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.5.0"
 
+[[deps.CUDA_Compiler_jll]]
+deps = ["Artifacts", "CUDA_Driver_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
+git-tree-sha1 = "e049ed128723ee3a830b6e06f5a33e3d46a2cd78"
+uuid = "d1e2174e-dfdc-576e-b43e-73b79eb1aca8"
+version = "0.6.3+2"
+
 [[deps.CUDA_Driver_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML"]
-git-tree-sha1 = "ff4a0abf98be36d9fa15ca7e968df562a210ab4b"
+git-tree-sha1 = "96ac2943356d2baaac3f08a03e6aaffcc56e74c9"
 uuid = "4ee394cb-3365-5eb0-8335-949819d2adfc"
-version = "13.3.0+1"
+version = "13.3.6+0"
 
 [[deps.CUDA_Runtime_jll]]
-deps = ["Artifacts", "CUDA_Driver_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "TOML"]
-git-tree-sha1 = "2e0352eb2a8321e46e1de54059bed9be8fd9391c"
+deps = ["Artifacts", "CUDA_Compiler_jll", "CUDA_Driver_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "MSVCRuntime_jll", "TOML"]
+git-tree-sha1 = "6269b71d191c0081b8fb3ff5945c2a57f16231d4"
 uuid = "76a88914-d11a-5bdc-97e0-2f5a05c973a2"
-version = "0.23.0+1"
+version = "0.25.0+3"
 
 [[deps.CUDA_SDK_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "1a91c800e3638fc1e5ad2f2a4668cdf84c655d17"
+git-tree-sha1 = "725f5f448571fba244d745c7d21173b64ca453d8"
 uuid = "6cbf2f2e-7e60-5632-ac76-dca2274e0be0"
-version = "13.3.1+0"
+version = "13.4.3+0"
 
 [[deps.Clang]]
 deps = ["CEnum", "Clang_unified_jll", "Downloads", "Pkg", "TOML"]
@@ -47,9 +53,9 @@ version = "0.19.3"
 
 [[deps.Clang_unified_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "TOML", "Zlib_jll", "Zstd_jll", "libLLVM_jll"]
-git-tree-sha1 = "05e53efbcd4efa450a3bf343b62793436b2cc5d1"
+git-tree-sha1 = "42338daf61a661b2006915efb60512c401f76dd6"
 uuid = "ffc816e1-ba66-5fa9-9ecc-bcc5cb19bea1"
-version = "0.1.5+1"
+version = "0.1.13+0"
 
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -119,6 +125,12 @@ version = "1.11.0"
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 version = "1.11.0"
 
+[[deps.MSVCRuntime_jll]]
+deps = ["Artifacts", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "9670d7b2dbc92652a250e88eaa80861892d453e2"
+uuid = "ce32ce21-2cee-52aa-a084-5c6dad4fa7db"
+version = "14.51.36247+0"
+
 [[deps.Markdown]]
 deps = ["Base64", "JuliaSyntaxHighlighting", "StyledStrings"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -150,9 +162,9 @@ version = "1.12.1"
 
 [[deps.Preferences]]
 deps = ["TOML"]
-git-tree-sha1 = "8b770b60760d4451834fe79dd483e318eee709c4"
+git-tree-sha1 = "aef1987d90dcc2e2cbd919ad10b2d25bcce4f418"
 uuid = "21216c6a-2e73-6563-6e65-726566657250"
-version = "1.5.2"
+version = "1.6.1"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -204,9 +216,9 @@ version = "1.5.7+1"
 
 [[deps.cuPDLPx_jll]]
 deps = ["Artifacts", "CUDA_Runtime_jll", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "TOML", "Zlib_jll"]
-git-tree-sha1 = "edf5ec28498ca0e149f25df0b7711ed376ffeb33"
+git-tree-sha1 = "2709ed5e09c4172262583f4a3ee3b27bdd67dc4d"
 uuid = "bca5daad-f4d3-5101-ae12-8b63679c982c"
-version = "0.3.0+0"
+version = "0.4.0+0"
 
 [[deps.libLLVM_jll]]
 deps = ["Artifacts", "Libdl"]
